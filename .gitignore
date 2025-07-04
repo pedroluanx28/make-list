@@ -1,2 +1,3 @@
-auth
+tokens
 node_modules
+.env
