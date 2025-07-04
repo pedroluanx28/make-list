@@ -68,21 +68,26 @@ async function startBot() {
         const messageText =
             msg.message?.conversation ||
             msg.message?.extendedTextMessage?.text ||
-            "";
+            ''
+
+        // identificar de qual grupo veio a mensagem
+        const groupId = msg.key.remoteJid
 
         // Detectar lista de nomes com "-"
-        if (messageText.startsWith("-")) {
-            const nomes = messageText
-                .split("\n")
-                .map((l) => l.trim())
-                .filter((l) => l.startsWith("-"))
-                .map((l) => l.replace("-", "").trim());
+        if (groupId == "120363022267639068@g.us") {
+            if (messageText.startsWith('-')) {
+                const nomes = messageText
+                    .split('\n')
+                    .map(l => l.trim())
+                    .filter(l => l.startsWith('-'))
+                    .map(l => l.replace('-', '').trim())
 
-            listaTemporaria[sender] = nomes;
+                listaTemporaria[sender] = nomes;
 
-            await sock.sendMessage(sender, {
-                text: `✅ Lista recebida com ${nomes.length} nome(s). Digite "/make-list" para gerar os times.`,
-            });
+                await sock.sendMessage(sender, {
+                    text: `✅ Lista recebida com ${nomes.length} nome(s). Digite "/make-list" para gerar os times.`,
+                });
+            }
         }
 
         // Gera os times quando receber "make list"
