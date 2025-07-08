@@ -1,14 +1,14 @@
 const { verifyPrefix, hasTypeOrCommand } = require("../middlewares");
 const { checkPermission } = require("../middlewares/checkPermission");
 const { DangerError, InvalidParameterError, WarningError } = require("../errors");
-const { findCommandImport } = require("../utils/findCommandImport");
+const { findCommandImport } = require("./index");
 
 exports.dynamicCommand = async (paramsHandler) => {
     const { commandName, prefix, sendWarningReply, sendErrorReply } = paramsHandler;
 
     const { type, command } = findCommandImport(commandName);
 
-    if (!verifyPrefix(prefix) || hasTypeOrCommand({ type, command })) {
+    if (!verifyPrefix(prefix) || !hasTypeOrCommand({ type, command })) {
         return;
     }
 
@@ -17,7 +17,7 @@ exports.dynamicCommand = async (paramsHandler) => {
     }
 
     try {
-        await command.handler({ ...paramsHandler, type })
+        await command.handle({ ...paramsHandler, type })
     } catch (error) {
         console.log(error);
 
