@@ -6,4 +6,5 @@ exports.BOT_EMOJI = "🤖";
 exports.BOT_NAME = "SindiBot";
 exports.BOT_NUMBER = "";
 
-exports.COMMANDS_DIR = path.resolve(__dirname, "../commands");
+exports.COMMANDS_DIR = path.resolve(__dirname, "commands");
+exports.TEMP_DIR = path.resolve(__dirname, "../", "assets", "temp");

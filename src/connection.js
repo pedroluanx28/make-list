@@ -2,25 +2,33 @@ const {
     default: makeWASocket,
     useMultiFileAuthState,
     fetchLatestBaileysVersion,
-    DisconnectReason
+    DisconnectReason,
+    makeCacheableSignalKeyStore
 } = require("@whiskeysockets/baileys");
 const path = require("path");
 const pino = require("pino");
 const { question, onlyNumbers } = require("./utils");
+const { TEMP_DIR } = require("./config");
 
 exports.connect = async () => {
-    const {state, saveCreds } = await useMultiFileAuthState(
-        path.resolve(__dirname, "...", "assets", "auth", "baileys")
+    const { state, saveCreds } = await useMultiFileAuthState(
+        path.resolve(__dirname, "../", "assets", "auth", "baileys")
     );
 
     const { version } = await fetchLatestBaileysVersion();
 
+    const logger = pino(
+        { timestamp: () => `,"time":"${new Date().toJSON()}"` },
+        pino.destination(path.join(TEMP_DIR, "wa-logs.txt"))
+    );
+
     const socket = makeWASocket({
         printQRInTerminal: false,
         version,
-        logger: pino({ level: "error" }),
+        logger,
         auth: {
-            creds: state.creds
+            creds: state.creds,
+            keys: makeCacheableSignalKeyStore(state.keys, logger)
         },
         markOnlineOnConnect: true
     });
@@ -40,7 +48,7 @@ exports.connect = async () => {
     socket.ev.on("connection.update", (update) => {
         const { connection, lastDisconnect } = update;
 
-        if(connection === "close") {
+        if (connection === "close") {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
 
             if (shouldReconnect) {

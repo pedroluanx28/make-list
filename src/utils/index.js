@@ -48,13 +48,13 @@ exports.extractDataFromMessage = (webMessage) => {
   const [command, ...args] = message.split(" ");
   const prefix = command.charAt(0);
 
-  const commandWithoutPrefix = command.replace(new RegExp(`^[${PREFIX}]+`));
+  const commandWithoutPrefix = command.replace(new RegExp(`^[${PREFIX}]+`), "");
 
   return {
     args: this.splitByCharacters(args.join(" "), ["\\", "|", "/"]),
     commandName: this.formatCommand(commandWithoutPrefix),
     fullArgs: args.join(" "),
-    fullMessage,
+    fullMessage: message,
     isReply,
     prefix,
     remoteJid: webMessage?.key?.remoteJid,
@@ -75,7 +75,7 @@ exports.splitByCharacters = (str, characters) => {
 
 exports.formatCommand = (text) => {
   return this.onlyLettersAndNumbers(
-    this.removeAccentsAndSpecialCharacters(text.toLocaleLowerCase().trim())
+    this.removeAccentsAndSpecialCharacters(text?.toLocaleLowerCase()?.trim())
   );
 };
 
@@ -113,7 +113,7 @@ exports.getContent = (webMessage, context) => {
   );
 };
 
-exports.fileCommandImport = (commandName) => {
+exports.findCommandImport = (commandName) => {
   const command = this.readCommandImports();
 
   let typeReturn = "";
@@ -148,7 +148,9 @@ exports.readCommandImports = () => {
 
   for (const subDir of subDirs) {
     const subDirPath = path.join(COMMANDS_DIR, subDir);
-    const files = fs.readdirSync(subDirPath).filter(file => !file.startsWith('_') && (file.endsWith('.js') || file.endsWith('.ts')));
+    const files = fs.readdirSync(subDirPath)
+      .filter(file => !file.startsWith('_') && (file.endsWith('.js') || file.endsWith('.ts')))
+      .map(file => require(path.join(subDirPath, file)));
 
     commandImports[subDir] = files;
   }

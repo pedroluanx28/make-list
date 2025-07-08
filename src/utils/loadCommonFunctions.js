@@ -18,7 +18,7 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
           );
      }
 
-     const sendReaction = async (reaction) => {
+     const sendReact = async (emoji) => {
           return await socket.sendMessage(remoteJid, {
                react: {
                     text: emoji,
@@ -54,12 +54,23 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
           return await sendReply(`✅ ${text}`, mentions);
      };
 
+     const sendErrorReply = async (text, mentions) => {
+          await sendErrorReact();
+          return await sendReply(`❌ ${text}`, mentions);
+     };
+
+     const sendWarningReply = async (text, mentions) => {
+          await sendWarningReact();
+          return await sendReply(`⚠️ ${text}`, mentions);
+     };
+
      return {
           socket,
           remoteJid,
           userJid,
           prefix,
           commandName,
+          fullMessage,
           args,
           isReply,
           isAudio,
@@ -71,11 +82,13 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
           webMessage,
           sendText,
           sendReply,
-          sendReaction,
+          sendReact,
           sendSuccessReact,
           sendWaitReact,
           sendWarningReact,
           sendErrorReact,
-          sendSuccessReply
+          sendSuccessReply,
+          sendErrorReply,
+          sendWarningReply
      }
 } 
