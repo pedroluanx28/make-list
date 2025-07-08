@@ -1,5 +1,8 @@
-exports.onMessagesUpsert = async ({socket, messages}) => {
-    if(!messages.length) {
+const { loadCommonFunctions } = require("../utils/loadCommonFunctions");
+const { dynamicCommand } = require("../commands/dynamicCommand");
+
+exports.onMessagesUpsert = async ({ socket, messages }) => {
+    if (!messages.length) {
         return;
     }
 
