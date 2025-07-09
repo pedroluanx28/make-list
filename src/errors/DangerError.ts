@@ -5,6 +5,4 @@ class DangerError extends Error {
     }
 }
 
-module.exports = {
-    DangerError
-}
+export { DangerError }

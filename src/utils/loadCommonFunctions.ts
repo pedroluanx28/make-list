@@ -1,16 +1,16 @@
-const { extractDataFromMessage, baileysIs } = require(".");
-const { BOT_EMOJI } = require("../config");
+import { extractDataFromMessage, baileysIs } from ".";
+import { BOT_EMOJI } from "../config";
 
-exports.loadCommonFunctions = ({ socket, webMessage }) => {
+export const loadCommonFunctions = ({ socket, webMessage }) => {
      const { remoteJid, args, commandName, fullArgs, fullMessage, isReply, prefix, replyJid, userJid } = extractDataFromMessage(webMessage);
 
-     const sendText = async (text) => {
+     const sendText = async (text: string) => {
           return await socket.sendMessage(remoteJid, {
                text: `${BOT_EMOJI} ${text}`
           });
      }
 
-     const sendReply = async (text) => {
+     const sendReply = async (text: string) => {
           return await socket.sendMessage(
                remoteJid,
                { text: `${BOT_EMOJI} ${text}` },
@@ -18,7 +18,7 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
           );
      }
 
-     const sendReact = async (emoji) => {
+     const sendReact = async (emoji: string) => {
           return await socket.sendMessage(remoteJid, {
                react: {
                     text: emoji,
@@ -49,19 +49,19 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
           return await sendReact("❌");
      };
 
-     const sendSuccessReply = async (text, mentions) => {
+     const sendSuccessReply = async (text: string) => {
           await sendSuccessReact();
-          return await sendReply(`✅ ${text}`, mentions);
+          return await sendReply(`✅ ${text}`);
      };
 
-     const sendErrorReply = async (text, mentions) => {
+     const sendErrorReply = async (text: string) => {
           await sendErrorReact();
-          return await sendReply(`❌ ${text}`, mentions);
+          return await sendReply(`❌ ${text}`);
      };
 
-     const sendWarningReply = async (text, mentions) => {
+     const sendWarningReply = async (text: string) => {
           await sendWarningReact();
-          return await sendReply(`⚠️ ${text}`, mentions);
+          return await sendReply(`⚠️ ${text}`);
      };
 
      return {
