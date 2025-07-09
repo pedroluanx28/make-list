@@ -5,6 +5,4 @@ class InvalidParameterError extends Error {
     }
 }
 
-module.exports = {
-    InvalidParameterError
-}
+export { InvalidParameterError };
