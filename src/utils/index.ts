@@ -3,6 +3,14 @@ import { PREFIX, COMMANDS_DIR } from "../config";
 import fs from "fs";
 import path from "path";
 
+type Command = {
+    name: string,
+    description: string,
+    commands: string[],
+    usage: string,
+    handle: () => void
+}
+
 const question = (message: string) => {
     const readlineInterface = readline.createInterface({
         input: process.stdin,
@@ -141,12 +149,11 @@ const findCommandImport = (commandName) => {
         let commandConstName = "";
 
         const targetCommand = (commands as any).find((cmd) => {
-            const [formattedCommandName] = Object.entries(cmd)[0];
+            const [formattedCommandName, array] = Object.entries(cmd)[0];
+
             commandConstName = formattedCommandName;
 
-            return cmd[commandConstName]?.commands.map((cmd) =>
-                formatCommand(cmd).includes(formatCommand(commandName))
-            );
+            return (array as Command)?.commands.find((c) => formatCommand(c).includes(formatCommand(commandName)));
         });
 
         if (targetCommand) {

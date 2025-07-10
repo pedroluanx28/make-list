@@ -12,7 +12,7 @@ export const drawTeams = {
     description: "Sortear times a partir de uma lista",
     commands: ["draw-teams"],
     usage: `${PREFIX}draw-teams`,
-    handle: async ({ sendReply, sendReact, fullMessage }) => {
+    handle: async ({ sendReply, fullMessage }) => {
         function shuffle<T>(array: T[]): T[] {
             const arr = [...array];
             for (let i = arr.length - 1; i > 0; i--) {
@@ -22,11 +22,17 @@ export const drawTeams = {
             return arr;
         }
 
-         const lines = fullMessage
+         const lines: string[] = fullMessage
             .split("\n")
             .map(line => line.trim())
             .filter(line => line.startsWith("-"))
             .map(line => line.replace(/^-/, "").trim());
+
+        if (!lines.length) {
+            await sendReply("Nenhuma lista foi enviada 😆");
+
+            return;
+        }
 
         const people: Person[] = lines.map(name => ({
             name,
@@ -59,8 +65,8 @@ export const drawTeams = {
         let result = '';
 
         teams.forEach((time, i) => {
-            result += `*Time ${i + 1}:*\n${time
-            .map((player) => `- ${player.name}`)
+            result += `\n*Time ${i + 1}:*\n${time
+            .map((player) => `-${player.name}`)
             .join('\n')}\n`
         })
 

@@ -10,11 +10,12 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
           });
      }
 
-     const sendReply = async (text: string) => {
+     const sendReply = async (text: string, mentions?: string[]) => {
           return await socket.sendMessage(
                remoteJid,
                { text: `${BOT_EMOJI} ${text}` },
-               { quoted: webMessage }
+               { quoted: webMessage },
+               { mentions: mentions?.length ? mentions : [] }
           );
      }
 
