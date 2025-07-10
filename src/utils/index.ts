@@ -138,16 +138,20 @@ const findCommandImport = (commandName) => {
 
     for (const [type, commands] of Object.entries(command)) {
         if (!(commands as any).length) continue;
+        let commandConstName = "";
 
-        const targetCommand = (commands as any).find((cmd) =>
-            cmd[commandName]?.commands.map((cmd) =>
+        const targetCommand = (commands as any).find((cmd) => {
+            const [formattedCommandName] = Object.entries(cmd)[0];
+            commandConstName = formattedCommandName;
+
+            return cmd[commandConstName]?.commands.map((cmd) =>
                 formatCommand(cmd).includes(formatCommand(commandName))
-            )
-        );
+            );
+        });
 
         if (targetCommand) {
             typeReturn = type;
-            targetCommandReturn = targetCommand[commandName];
+            targetCommandReturn = targetCommand[commandConstName];
             break;
         }
     }
