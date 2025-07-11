@@ -1,18 +1,29 @@
 import { PREFIX } from "../../config";
 
 export const markAll = {
-    name: "Marcar todos",
+    name: "markAll",
     description: "Marca todos os membros de um grupo",
-    commands: ["mark-all"],
-    usage: `${PREFIX}mark-all`,
-    handle: async ({ sendText, socket, remoteJid, sendReact }) => {
-        const { participants } = await socket.groupMetadata(remoteJid);
+    commands: ["hidetag", "markall", "all"],
+    usage: `${PREFIX}hidetag`,
+    handle: async ({ sendText, sendReact, sendReply, fullArgs, isGroup, getGroupParticipants }) => {
+        const participants = await getGroupParticipants();
+
+        if (!participants?.length) {
+            return sendReply("Não consegui obter os membros do grupo.");
+        }
 
         const mentions = participants.map(({ id }) => id);
-        const message = participants.map(({ id }) => `@${id}`);
 
-        await sendReact("📢");
+        const message = participants.map(({ id }) => `@${id.split("@")[0]}`).join("\n");
 
-        await sendText(`📢 Marcando todos! ${message}`, mentions);
+        await sendReact("");
+
+        await sendReply(`📢 *ATENÇÃO* \n ${message}`, mentions);
+
+        await sendText(fullArgs);
+
+        if (!isGroup) {
+            return sendReply("Este comando só pode ser usado em grupos.");
+        }
     },
 };
