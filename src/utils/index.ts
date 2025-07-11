@@ -56,7 +56,7 @@ const extractDataFromMessage = (webMessage) => {
 
     const replyJid =
         Boolean(extendedTextMessage) &&
-        Boolean(extendedTextMessage?.contextInfo?.participant)
+            Boolean(extendedTextMessage?.contextInfo?.participant)
             ? extendedTextMessage.contextInfo.participant
             : null;
 
@@ -124,13 +124,13 @@ const getContent = (webMessage, context) => {
     return (
         webMessage?.message?.[`${context}Message`] ||
         webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage?.[
-            `${context}Message`
+        `${context}Message`
         ] ||
         webMessage?.message?.viewOnceMessage?.message?.[`${context}Message`] ||
         webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage
             ?.viewOnceMessage?.message?.[`${context}Message`] ||
         webMessage?.message?.viewOnceMessageV2?.message?.[
-            `${context}Message`
+        `${context}Message`
         ] ||
         webMessage?.message?.extendedTextMessage?.contextInfo?.quotedMessage
             ?.viewOnceMessageV2?.message?.[`${context}Message`]

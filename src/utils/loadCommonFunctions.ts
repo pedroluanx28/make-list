@@ -1,21 +1,33 @@
-import { extractDataFromMessage, baileysIs } from ".";
+import { extractDataFromMessage, baileysIs, isGroup } from ".";
 import { BOT_EMOJI } from "../config";
 
 export const loadCommonFunctions = ({ socket, webMessage }) => {
      const { remoteJid, args, commandName, fullArgs, fullMessage, isReply, prefix, replyJid, userJid } = extractDataFromMessage(webMessage);
 
-     const sendText = async (text: string) => {
+     const sendText = async (text: string, mentions?: string[]) => {
+          let optionalParams = {};
+
+          if (mentions?.length) {
+               optionalParams = { mentions };
+          }
+
           return await socket.sendMessage(remoteJid, {
-               text: `${BOT_EMOJI} ${text}`
+               text: `${BOT_EMOJI} ${text}`,
+               ...mentions
           });
      }
 
      const sendReply = async (text: string, mentions?: string[]) => {
+          let optionalParams = {};
+
+          if (mentions?.length) {
+               optionalParams = { mentions };
+          }
+
           return await socket.sendMessage(
                remoteJid,
-               { text: `${BOT_EMOJI} ${text}` },
-               { quoted: webMessage },
-               { mentions: mentions?.length ? mentions : [] }
+               { text: `${BOT_EMOJI} ${text}`, ...optionalParams },
+               { quoted: webMessage }
           );
      }
 
@@ -28,11 +40,30 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
           })
      }
 
+
+     const getGroupMetadata = async (groupJid = remoteJid) => {
+          if (!groupJid.endsWith("@g.us")) {
+               return null;
+          }
+
+          return await socket.groupMetadata(groupJid);
+     };
+
+     const getGroupParticipants = async (groupJid = remoteJid) => {
+          if (!groupJid.endsWith("@g.us")) {
+               return [];
+          }
+
+          const metadata = await getGroupMetadata(groupJid);
+          return metadata?.participants || [];
+     }
+
      const isAudio = baileysIs(webMessage, "audio");
      const isImage = baileysIs(webMessage, "image");
      const isVideo = baileysIs(webMessage, "video");
      const isSticker = baileysIs(webMessage, "sticker");
 
+     const isGroup = !!remoteJid?.endsWith("@g.us");
 
      const sendSuccessReact = async () => {
           return await sendReact("✅");
@@ -90,6 +121,8 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
           sendErrorReact,
           sendSuccessReply,
           sendErrorReply,
-          sendWarningReply
+          sendWarningReply,
+          isGroup,
+          getGroupParticipants
      }
-} 
+}
