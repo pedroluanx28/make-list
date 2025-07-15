@@ -1,16 +1,16 @@
 import { PREFIX } from "../../config";
 
 type Person = {
-  name: string;
-  isSeed: boolean;
+    name: string;
+    isSeed: boolean;
 };
 
 type Team = Person[];
 
-export const drawTeams = {
+export const drawTeams: Command = {
     name: "Sortear times",
     description: "Sortear times a partir de uma lista",
-    commands: ["draw-teams"],
+    commands: ["drawteams"],
     usage: `${PREFIX}draw-teams`,
     handle: async ({ sendReply, fullMessage }) => {
         function shuffle<T>(array: T[]): T[] {
@@ -22,25 +22,25 @@ export const drawTeams = {
             return arr;
         }
 
-         const lines: string[] = fullMessage
+        const lines: string[] = fullMessage
             .split("\n")
-            .map(line => line.trim())
-            .filter(line => line.startsWith("-"))
-            .map(line => line.replace(/^-/, "").trim());
+            .map((line) => line.trim())
+            .filter((line) => line.startsWith("-"))
+            .map((line) => line.replace(/^-/, "").trim());
 
         if (!lines.length) {
-            await sendReply("Nenhuma lista foi enviada 😆");
+            await sendReply("Nenhuma lista foi enviada");
 
             return;
         }
 
-        const people: Person[] = lines.map(name => ({
+        const people: Person[] = lines.map((name) => ({
             name,
             isSeed: name.includes("👑"),
         }));
 
-        const seeds = shuffle(people.filter(p => p.isSeed));
-        const nonSeeds = shuffle(people.filter(p => !p.isSeed));
+        const seeds = shuffle(people.filter((p) => p.isSeed));
+        const nonSeeds = shuffle(people.filter((p) => !p.isSeed));
 
         const totalPeople = people.length;
         const maxPerTeam = 6;
@@ -62,14 +62,14 @@ export const drawTeams = {
             teams[currentTeam].push(person);
         }
 
-        let result = '';
+        let result = "";
 
         teams.forEach((time, i) => {
             result += `\n*Time ${i + 1}:*\n${time
-            .map((player) => `-${player.name}`)
-            .join('\n')}\n`
-        })
+                .map((player) => `-${player.name}`)
+                .join("\n")}\n`;
+        });
 
         await sendReply(result);
-    }
-}
+    },
+};

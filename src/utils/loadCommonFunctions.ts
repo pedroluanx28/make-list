@@ -11,8 +11,9 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
                optionalParams = { mentions };
           }
 
-          return await socket.sendMessage(remoteJid, {
+          await socket.sendMessage(remoteJid, {
                text: `${BOT_EMOJI} ${text}`,
+               ...optionalParams,
                ...mentions
           });
      }
@@ -24,7 +25,7 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
                optionalParams = { mentions };
           }
 
-          return await socket.sendMessage(
+          await socket.sendMessage(
                remoteJid,
                { text: `${BOT_EMOJI} ${text}`, ...optionalParams },
                { quoted: webMessage }
@@ -32,7 +33,7 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
      }
 
      const sendReact = async (emoji: string) => {
-          return await socket.sendMessage(remoteJid, {
+          await socket.sendMessage(remoteJid, {
                react: {
                     text: emoji,
                     key: webMessage.key
@@ -51,11 +52,11 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
 
      const getGroupParticipants = async (groupJid = remoteJid) => {
           if (!groupJid.endsWith("@g.us")) {
-               return [];
+               return [] as Participant[];
           }
 
           const metadata = await getGroupMetadata(groupJid);
-          return metadata?.participants || [];
+          return metadata?.participants as Participant[] || [] as Participant[];
      }
 
      const isAudio = baileysIs(webMessage, "audio");
@@ -124,5 +125,5 @@ export const loadCommonFunctions = ({ socket, webMessage }) => {
           sendWarningReply,
           isGroup,
           getGroupParticipants
-     }
+     } as CommonFunctions
 }

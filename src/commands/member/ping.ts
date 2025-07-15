@@ -1,6 +1,6 @@
 import { PREFIX } from "../../config";
 
-export const ping = {
+export const ping: Command= {
     name: "ping",
     description: "Verificar conexão com o bot",
     commands: ["ping"],

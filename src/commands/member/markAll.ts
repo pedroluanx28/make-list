@@ -1,10 +1,10 @@
 import { PREFIX } from "../../config";
 
-export const markAll = {
+export const markAll: Command = {
     name: "markAll",
     description: "Marca todos os membros de um grupo",
-    commands: ["hidetag", "markall", "all"],
-    usage: `${PREFIX}hidetag`,
+    commands: ["markall", "all"],
+    usage: `${PREFIX}markall`,
     handle: async ({ sendText, sendReact, sendReply, fullArgs, isGroup, getGroupParticipants }) => {
         const participants = await getGroupParticipants();
 
@@ -20,7 +20,9 @@ export const markAll = {
 
         await sendReply(`📢 *ATENÇÃO* \n ${message}`, mentions);
 
-        await sendText(fullArgs);
+        if (fullArgs) {
+            await sendText(fullArgs);
+        }
 
         if (!isGroup) {
             return sendReply("Este comando só pode ser usado em grupos.");
