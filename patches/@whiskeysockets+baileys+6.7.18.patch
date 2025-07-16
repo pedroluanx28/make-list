@@ -1,0 +1,13 @@
+diff --git a/node_modules/@whiskeysockets/baileys/lib/Socket/index.d.ts b/node_modules/@whiskeysockets/baileys/lib/Socket/index.d.ts
+index 38f8b58..a8639f9 100644
+--- a/node_modules/@whiskeysockets/baileys/lib/Socket/index.d.ts
++++ b/node_modules/@whiskeysockets/baileys/lib/Socket/index.d.ts
+@@ -17,7 +17,7 @@ declare const makeWASocket: (config: UserFacingSocketConfig) => {
+     sendMessageAck: ({ tag, attrs, content }: import("..").BinaryNode, errorCode?: number) => Promise<void>;
+     sendRetryRequest: (node: import("..").BinaryNode, forceIncludeKeys?: boolean) => Promise<void>;
+     rejectCall: (callId: string, callFrom: string) => Promise<void>;
+-    fetchMessageHistory: (count: number, oldestMsgKey: import("../Types").WAMessageKey, oldestMsgTimestamp: number | import("long").default) => Promise<string>;
++    fetchMessageHistory: (count: number, oldestMsgKey: import("../Types").WAMessageKey, oldestMsgTimestamp: number | import("long")) => Promise<string>;
+     requestPlaceholderResend: (messageKey: import("../Types").WAMessageKey) => Promise<string | undefined>;
+     getPrivacyTokens: (jids: string[]) => Promise<any>;
+     assertSessions: (jids: string[], force: boolean) => Promise<boolean>;

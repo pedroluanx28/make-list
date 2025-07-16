@@ -5,6 +5,4 @@ class WarningError extends Error {
     }
 }
 
-module.exports = {
-    WarningError
-}
+export { WarningError }
