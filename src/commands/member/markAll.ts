@@ -3,7 +3,7 @@ import { PREFIX } from "../../config";
 export const markAll: Command = {
     name: "markAll",
     description: "Marca todos os membros de um grupo",
-    commands: ["markall", "all"],
+    commands: ["markall", "all", "todes"],
     usage: `${PREFIX}markall`,
     handle: async ({ sendText, sendReact, sendReply, fullArgs, isGroup, getGroupParticipants }) => {
         const participants = await getGroupParticipants();
