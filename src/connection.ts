@@ -1,16 +1,16 @@
-const {
-    default: makeWASocket,
+import makeWASocket, {
     useMultiFileAuthState,
     fetchLatestBaileysVersion,
     DisconnectReason,
-    makeCacheableSignalKeyStore
-} = require("@whiskeysockets/baileys");
-const path = require("path");
-const pino = require("pino");
-const { question, onlyNumbers } = require("./utils");
-const { TEMP_DIR } = require("./config");
+    makeCacheableSignalKeyStore,
+} from "@whiskeysockets/baileys";
+import path from "path";
+import pino from "pino";
+import { question, onlyNumbers } from "./utils"
+import { TEMP_DIR } from "./config";
+import { Boom } from '@hapi/boom';
 
-exports.connect = async () => {
+export const connect = async () => {
     const { state, saveCreds } = await useMultiFileAuthState(
         path.resolve(__dirname, "../", "assets", "auth", "baileys")
     );
@@ -49,10 +49,10 @@ exports.connect = async () => {
         const { connection, lastDisconnect } = update;
 
         if (connection === "close") {
-            const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            const shouldReconnect = (lastDisconnect.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
 
             if (shouldReconnect) {
-                this.connect()
+                connect()
             }
         }
     });

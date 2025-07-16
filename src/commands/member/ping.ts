@@ -1,6 +1,6 @@
-const { PREFIX } = require("../../config");
+import { PREFIX } from "../../config";
 
-module.exports = {
+export const ping: Command= {
     name: "ping",
     description: "Verificar conexão com o bot",
     commands: ["ping"],
