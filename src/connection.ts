@@ -30,7 +30,13 @@ export const connect = async () => {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, logger)
         },
-        markOnlineOnConnect: true
+        markOnlineOnConnect: true,
+        shouldIgnoreJid: (jid) => {
+            if (jid.includes('status@broadcast')) return true;
+            if (jid.includes('@g.us') && jid.includes('announce')) return true;
+            return false;
+        },
+        syncFullHistory: false
     });
 
     if (!socket.authState.creds.registered) {
