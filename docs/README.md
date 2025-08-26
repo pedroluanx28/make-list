@@ -47,6 +47,54 @@ Cada comando possui documentação seguindo esta estrutura padronizada:
 3. **Parâmetros**: Comandos que aceitam parâmetros têm formatos específicos documentados
 4. **Ajuda**: Alguns comandos oferecem ajuda interna (ex: `--help`)
 
+## Testando os Comandos 🧪
+
+O projeto possui testes unitários abrangentes para todos os comandos disponíveis, garantindo qualidade e confiabilidade do código.
+
+### Executando os Testes
+
+```bash
+# Executar todos os testes
+npm test
+
+# Executar testes em modo watch (desenvolvimento)
+npm run test:watch
+
+# Executar testes com relatório de cobertura
+npm run test:coverage
+
+# Executar apenas o build (verificar TypeScript)
+npm run build
+```
+
+### Cobertura de Testes
+
+- **ping**: Testa conectividade e resposta do bot
+- **markAll**: Testa menção de membros em grupos  
+- **templateList**: Testa criação de templates com parâmetros
+- **drawTeams**: Testa sorteio de times e distribuição de jogadores
+
+### Framework Utilizado
+
+- **Jest**: Framework de testes principal
+- **TypeScript**: Suporte completo a tipos
+- **Mocks**: Simulação das funções do WhatsApp para testes isolados
+
+### Estrutura dos Testes
+
+```
+tests/
+├── commands/
+│   └── member/
+│       ├── ping.test.ts
+│       ├── markAll.test.ts
+│       ├── templateList.test.ts
+│       └── drawTeams.test.ts
+├── mocks/
+│   └── commonFunctions.ts
+└── setup.ts
+```
+
 ## Contribuindo
 
 Para adicionar documentação de novos comandos:
