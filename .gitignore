@@ -4,3 +4,7 @@ node_modules
 assets
 dist
 coverage
+
+# saída do tsc gerada por engano dentro de tests/
+tests/**/*.js
+tests/**/*.js.map
