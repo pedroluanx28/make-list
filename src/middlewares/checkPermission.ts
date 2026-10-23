@@ -3,6 +3,11 @@ export const checkPermission = async ({ type, socket, userJid, remoteJid }) => {
         return true;
     }
 
+    // Admin/owner roles only exist in groups; groupMetadata throws for private chats
+    if (!remoteJid?.endsWith("@g.us")) {
+        return false;
+    }
+
     const { participants, owner } = await socket.groupMetadata(remoteJid);
     const participant = participants.find((participant) => participant.id === userJid);
 

@@ -5,13 +5,15 @@ jest.mock('@whiskeysockets/baileys', () => ({
     decryptPollVote: jest.fn(),
     jidNormalizedUser: (jid: string) => jid.replace(/:\d+@/, '@'),
 }));
+// No menu.json on disk: the menu falls back to the defaults
+jest.mock('fs');
 
 import { decryptPollVote } from '@whiskeysockets/baileys';
 import { pedido } from '../../../src/commands/member/pedido';
 import { pedidoEncerrar } from '../../../src/commands/member/pedidoEncerrar';
 import { createMockCommonFunctions } from '../../mocks/commonFunctions';
+import { DEFAULT_MENU_ITEMS } from '../../../src/utils/menuManager';
 import {
-    MENU_ITEMS,
     getOrder,
     closeOrder,
     createOrder,
@@ -48,6 +50,7 @@ function createFakeOrder(overrides: Partial<ActiveOrder> = {}): ActiveOrder {
         pollMessageId: 'p1',
         pollEncKey: POLL_SECRET,
         pollCreatorJids: [BOT_JID],
+        menuItems: DEFAULT_MENU_ITEMS,
         votes: new Map(),
         startTime: Date.now(),
         endTime: Date.now() + 1000,
@@ -142,7 +145,7 @@ describe('pedido command', () => {
                 expect.objectContaining({
                     poll: expect.objectContaining({
                         name: expect.stringContaining('Pedido'),
-                        values: MENU_ITEMS.map((i) => i.name),
+                        values: DEFAULT_MENU_ITEMS.map((i) => i.name),
                         selectableCount: 0,
                     }),
                 })
@@ -346,7 +349,7 @@ describe('pedidoManager', () => {
 
     describe('recordVote', () => {
         beforeEach(() => {
-            createOrder('chat@g.us', 'poll99', POLL_SECRET, [BOT_JID, BOT_LID], 60000, jest.fn());
+            createOrder('chat@g.us', 'poll99', POLL_SECRET, [BOT_JID, BOT_LID], DEFAULT_MENU_ITEMS, 60000, jest.fn());
         });
 
         afterEach(() => {

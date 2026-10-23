@@ -1,28 +1,14 @@
 import { createHash } from "crypto";
 import { decryptPollVote, jidNormalizedUser, proto } from "@whiskeysockets/baileys";
 import { BOT_EMOJI } from "../config";
-
-export type MenuItem = {
-    name: string;
-    price: number; // in cents (e.g. 700 = R$ 7,00)
-};
-
-export const MENU_ITEMS: MenuItem[] = [
-    { name: "cuscuz", price: 700 },
-    { name: "pão de carne", price: 600 },
-    { name: "pão de frango", price: 600 },
-    { name: "pão de queijo", price: 600 },
-    { name: "pão misto", price: 600 },
-    { name: "salada P", price: 500 },
-    { name: "salada G", price: 1000 },
-    { name: "pizza", price: 600 },
-];
+import { MenuItem, formatPrice } from "./menuManager";
 
 export type ActiveOrder = {
     chatId: string;
     pollMessageId: string;
     pollEncKey: Uint8Array; // messageContextInfo.messageSecret of the poll
     pollCreatorJids: string[]; // bot JIDs (PN and LID); votes are encrypted with one of them
+    menuItems: MenuItem[]; // snapshot of the menu used as poll options
     votes: Map<string, Set<string>>; // voterJid -> set of selected item names
     startTime: number;
     endTime: number;
@@ -50,6 +36,7 @@ export function createOrder(
     pollMessageId: string,
     pollEncKey: Uint8Array,
     pollCreatorJids: string[],
+    menuItems: MenuItem[],
     durationMs: number,
     closeCallback: () => void
 ): void {
@@ -63,6 +50,7 @@ export function createOrder(
         pollMessageId,
         pollEncKey,
         pollCreatorJids,
+        menuItems,
         votes: new Map(),
         startTime: Date.now(),
         endTime: Date.now() + durationMs,
@@ -75,6 +63,10 @@ export function createOrder(
 
 export function getOrder(chatId: string): ActiveOrder | undefined {
     return activeOrders.get(chatId);
+}
+
+export function hasOpenOrder(): boolean {
+    return Array.from(activeOrders.values()).some((order) => !order.closed);
 }
 
 export function closeOrder(chatId: string): ActiveOrder | null {
@@ -133,7 +125,7 @@ export function recordVote(
 
     const selectedNames = new Set<string>();
     for (const hash of selectedOptionHashes) {
-        const item = MENU_ITEMS.find((item) => buffersEqual(hashOption(item.name), hash));
+        const item = order.menuItems.find((item) => buffersEqual(hashOption(item.name), hash));
         if (item) selectedNames.add(item.name);
     }
 
@@ -147,7 +139,7 @@ export function buildSummaryMessages(order: ActiveOrder): {
     mentions: string[];
 } {
     const itemCounts = new Map<string, number>();
-    for (const item of MENU_ITEMS) {
+    for (const item of order.menuItems) {
         itemCounts.set(item.name, 0);
     }
 
@@ -157,7 +149,7 @@ export function buildSummaryMessages(order: ActiveOrder): {
         let userTotal = 0;
         for (const itemName of votedItems) {
             itemCounts.set(itemName, (itemCounts.get(itemName) || 0) + 1);
-            const item = MENU_ITEMS.find((i) => i.name === itemName);
+            const item = order.menuItems.find((i) => i.name === itemName);
             if (item) userTotal += item.price;
         }
         if (userTotal > 0) {
@@ -166,7 +158,7 @@ export function buildSummaryMessages(order: ActiveOrder): {
     }
 
     // Summary — item counts only, no prices
-    const summaryLines = MENU_ITEMS
+    const summaryLines = order.menuItems
         .filter((item) => (itemCounts.get(item.name) || 0) > 0)
         .map((item) => `- ${item.name}: ${itemCounts.get(item.name)}`);
 
@@ -182,8 +174,7 @@ export function buildSummaryMessages(order: ActiveOrder): {
     for (const [voterJid, total] of userTotals.entries()) {
         mentions.push(voterJid);
         const phone = voterJid.split("@")[0];
-        const reais = (total / 100).toFixed(2).replace(".", ",");
-        totalLines.push(`@${phone} — R$ ${reais}`);
+        totalLines.push(`@${phone} — ${formatPrice(total)}`);
     }
 
     const totals =
