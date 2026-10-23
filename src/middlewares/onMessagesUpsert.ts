@@ -12,14 +12,13 @@ export const onMessagesUpsert = async ({ socket, messages }) => {
     // Handle poll vote updates
     const pollUpdate = webMessage.message?.pollUpdateMessage;
     if (pollUpdate) {
-        const voterJid =
-            webMessage.key?.participant || webMessage.key?.remoteJid;
+        const voterJid = webMessage.key?.fromMe
+            ? socket.user?.id
+            : webMessage.key?.participant || webMessage.key?.remoteJid;
         const pollMessageId = pollUpdate.pollCreationMessageKey?.id;
-        const selectedOptionHashes: Uint8Array[] =
-            pollUpdate.vote?.selectedOptions || [];
 
-        if (voterJid && pollMessageId) {
-            recordVote(pollMessageId, voterJid, selectedOptionHashes);
+        if (voterJid && pollMessageId && pollUpdate.vote) {
+            recordVote(pollMessageId, voterJid, pollUpdate.vote);
         }
         return;
     }

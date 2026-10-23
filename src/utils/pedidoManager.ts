@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { decryptPollVote, jidNormalizedUser, proto } from "@whiskeysockets/baileys";
 import { BOT_EMOJI } from "../config";
 
 export type MenuItem = {
@@ -20,6 +21,8 @@ export const MENU_ITEMS: MenuItem[] = [
 export type ActiveOrder = {
     chatId: string;
     pollMessageId: string;
+    pollEncKey: Uint8Array; // messageContextInfo.messageSecret of the poll
+    pollCreatorJids: string[]; // bot JIDs (PN and LID); votes are encrypted with one of them
     votes: Map<string, Set<string>>; // voterJid -> set of selected item names
     startTime: number;
     endTime: number;
@@ -45,6 +48,8 @@ function buffersEqual(a: Buffer, b: Uint8Array): boolean {
 export function createOrder(
     chatId: string,
     pollMessageId: string,
+    pollEncKey: Uint8Array,
+    pollCreatorJids: string[],
     durationMs: number,
     closeCallback: () => void
 ): void {
@@ -56,6 +61,8 @@ export function createOrder(
     const order: ActiveOrder = {
         chatId,
         pollMessageId,
+        pollEncKey,
+        pollCreatorJids,
         votes: new Map(),
         startTime: Date.now(),
         endTime: Date.now() + durationMs,
@@ -81,32 +88,57 @@ export function closeOrder(chatId: string): ActiveOrder | null {
     return order;
 }
 
+function decryptSelectedOptions(
+    order: ActiveOrder,
+    voterJid: string,
+    encryptedVote: proto.Message.IPollEncValue
+): Uint8Array[] | null {
+    // In LID-addressed groups the vote is encrypted with the bot's LID instead of its PN
+    for (const pollCreatorJid of order.pollCreatorJids) {
+        try {
+            const vote = decryptPollVote(encryptedVote, {
+                pollCreatorJid,
+                pollMsgId: order.pollMessageId,
+                pollEncKey: order.pollEncKey,
+                voterJid,
+            });
+
+            return vote.selectedOptions || [];
+        } catch {
+            // wrong creator JID: GCM auth fails, try the next one
+        }
+    }
+
+    return null;
+}
+
 export function recordVote(
     pollMessageId: string,
     voterJid: string,
-    selectedOptionHashes: Uint8Array[]
+    encryptedVote: proto.Message.IPollEncValue
 ): void {
     // Normalize JID (remove device suffix like :15)
-    const normalizedJid = voterJid.replace(/:\d+(@|$)/, "$1");
+    const normalizedJid = jidNormalizedUser(voterJid);
 
-    for (const order of activeOrders.values()) {
-        if (order.pollMessageId !== pollMessageId || order.closed) continue;
+    const order = Array.from(activeOrders.values()).find(
+        (order) => order.pollMessageId === pollMessageId && !order.closed
+    );
+    if (!order) return;
 
-        const selectedNames = new Set<string>();
-        for (const hash of selectedOptionHashes) {
-            for (const item of MENU_ITEMS) {
-                const itemHash = hashOption(item.name);
-                if (buffersEqual(itemHash, hash)) {
-                    selectedNames.add(item.name);
-                    break;
-                }
-            }
-        }
-
-        // Replace the voter's selection (WhatsApp polls reflect current state)
-        order.votes.set(normalizedJid, selectedNames);
-        break;
+    const selectedOptionHashes = decryptSelectedOptions(order, normalizedJid, encryptedVote);
+    if (!selectedOptionHashes) {
+        console.log(`Não foi possível descriptografar o voto de ${normalizedJid} na enquete ${pollMessageId}`);
+        return;
     }
+
+    const selectedNames = new Set<string>();
+    for (const hash of selectedOptionHashes) {
+        const item = MENU_ITEMS.find((item) => buffersEqual(hashOption(item.name), hash));
+        if (item) selectedNames.add(item.name);
+    }
+
+    // Replace the voter's selection (WhatsApp polls reflect current state)
+    order.votes.set(normalizedJid, selectedNames);
 }
 
 export function buildSummaryMessages(order: ActiveOrder): {

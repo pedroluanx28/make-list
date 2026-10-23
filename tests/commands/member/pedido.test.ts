@@ -1,3 +1,12 @@
+import { createHash } from 'crypto';
+
+// Baileys is ESM-only and can't be loaded by Jest's CommonJS runtime
+jest.mock('@whiskeysockets/baileys', () => ({
+    decryptPollVote: jest.fn(),
+    jidNormalizedUser: (jid: string) => jid.replace(/:\d+@/, '@'),
+}));
+
+import { decryptPollVote } from '@whiskeysockets/baileys';
 import { pedido } from '../../../src/commands/member/pedido';
 import { pedidoEncerrar } from '../../../src/commands/member/pedidoEncerrar';
 import { createMockCommonFunctions } from '../../mocks/commonFunctions';
@@ -5,11 +14,51 @@ import {
     MENU_ITEMS,
     getOrder,
     closeOrder,
+    createOrder,
     recordVote,
     buildSummaryMessages,
     ActiveOrder,
 } from '../../../src/utils/pedidoManager';
-import { PREFIX } from '../../../src/config';
+
+const mockDecryptPollVote = decryptPollVote as jest.MockedFunction<typeof decryptPollVote>;
+
+const BOT_JID = '5511999999999@s.whatsapp.net';
+const BOT_LID = '123456789@lid';
+const POLL_SECRET = new Uint8Array(32).fill(7);
+const ENCRYPTED_VOTE = { encPayload: new Uint8Array([1, 2, 3]), encIv: new Uint8Array([4, 5, 6]) };
+
+const optionHash = (name: string) => createHash('sha256').update(name).digest();
+
+// Shape of the WAMessage that Baileys' sendMessage returns for a poll sent by the bot
+function createMockSocket(pollId: string | null = 'poll123') {
+    const sentPoll = pollId && {
+        key: { id: pollId, remoteJid: 'test@g.us', fromMe: true },
+        message: { messageContextInfo: { messageSecret: POLL_SECRET } },
+    };
+
+    return {
+        user: { id: '5511999999999:12@s.whatsapp.net', lid: '123456789:12@lid' },
+        sendMessage: jest.fn().mockResolvedValue(sentPoll),
+    };
+}
+
+function createFakeOrder(overrides: Partial<ActiveOrder> = {}): ActiveOrder {
+    const order: ActiveOrder = {
+        chatId: 'test@g.us',
+        pollMessageId: 'p1',
+        pollEncKey: POLL_SECRET,
+        pollCreatorJids: [BOT_JID],
+        votes: new Map(),
+        startTime: Date.now(),
+        endTime: Date.now() + 1000,
+        timeoutId: setTimeout(() => {}, 0),
+        closed: false,
+        ...overrides,
+    };
+    clearTimeout(order.timeoutId);
+
+    return order;
+}
 
 // Helper to clean up any active orders between tests
 function cleanupOrders() {
@@ -80,9 +129,7 @@ describe('pedido command', () => {
 
     describe('poll creation', () => {
         it('should create poll and reply on valid time', async () => {
-            const mockSocket = {
-                sendMessage: jest.fn().mockResolvedValue({ key: { id: 'poll123' } }),
-            };
+            const mockSocket = createMockSocket('poll123');
             const mock = createMockCommonFunctions({
                 fullArgs: '30',
                 socket: mockSocket,
@@ -106,9 +153,7 @@ describe('pedido command', () => {
         });
 
         it('should use singular "minuto" when time is 1', async () => {
-            const mockSocket = {
-                sendMessage: jest.fn().mockResolvedValue({ key: { id: 'poll456' } }),
-            };
+            const mockSocket = createMockSocket('poll456');
             const mock = createMockCommonFunctions({
                 fullArgs: '1',
                 socket: mockSocket,
@@ -122,9 +167,7 @@ describe('pedido command', () => {
         });
 
         it('should send error when poll creation fails (no key returned)', async () => {
-            const mockSocket = {
-                sendMessage: jest.fn().mockResolvedValue(null),
-            };
+            const mockSocket = createMockSocket(null);
             const mock = createMockCommonFunctions({
                 fullArgs: '10',
                 socket: mockSocket,
@@ -137,10 +180,24 @@ describe('pedido command', () => {
             );
         });
 
+        it('should send error when the poll message has no messageSecret', async () => {
+            const mockSocket = createMockSocket('pollNoSecret');
+            mockSocket.sendMessage.mockResolvedValue({ key: { id: 'pollNoSecret' }, message: {} });
+            const mock = createMockCommonFunctions({
+                fullArgs: '10',
+                socket: mockSocket,
+            });
+
+            await pedido.handle(mock);
+
+            expect(mock.sendErrorReply).toHaveBeenCalledWith(
+                expect.stringContaining('Erro ao criar')
+            );
+            expect(getOrder('test@g.us')).toBeUndefined();
+        });
+
         it('should reject duplicate active order in the same chat', async () => {
-            const mockSocket = {
-                sendMessage: jest.fn().mockResolvedValue({ key: { id: 'pollA' } }),
-            };
+            const mockSocket = createMockSocket('pollA');
             const mock = createMockCommonFunctions({
                 fullArgs: '10',
                 socket: mockSocket,
@@ -159,10 +216,8 @@ describe('pedido command', () => {
             );
         });
 
-        it('should register the order in pedidoManager after creation', async () => {
-            const mockSocket = {
-                sendMessage: jest.fn().mockResolvedValue({ key: { id: 'pollXYZ' } }),
-            };
+        it('should register the order with the poll secret and the bot JIDs as creator', async () => {
+            const mockSocket = createMockSocket('pollXYZ');
             const mock = createMockCommonFunctions({
                 fullArgs: '20',
                 socket: mockSocket,
@@ -173,7 +228,24 @@ describe('pedido command', () => {
             const order = getOrder('test@g.us');
             expect(order).toBeDefined();
             expect(order?.pollMessageId).toBe('pollXYZ');
+            expect(order?.pollEncKey).toBe(POLL_SECRET);
+            expect(order?.pollCreatorJids).toEqual([BOT_JID, BOT_LID]);
             expect(order?.closed).toBe(false);
+        });
+
+        it('should close the order and send results when the timer expires', async () => {
+            const mockSocket = createMockSocket('pollTimer');
+            const mock = createMockCommonFunctions({
+                fullArgs: '5',
+                socket: mockSocket,
+            });
+
+            await pedido.handle(mock);
+            await jest.advanceTimersByTimeAsync(5 * 60 * 1000);
+
+            expect(getOrder('test@g.us')).toBeUndefined();
+            // poll creation + two result messages
+            expect(mockSocket.sendMessage).toHaveBeenCalledTimes(3);
         });
     });
 });
@@ -210,9 +282,7 @@ describe('pedidoEncerrar command', () => {
 
     it('should close the order and send results when an order is active', async () => {
         // First, create an active order via the pedido command
-        const mockSocket = {
-            sendMessage: jest.fn().mockResolvedValue({ key: { id: 'pollClose1' } }),
-        };
+        const mockSocket = createMockSocket('pollClose1');
         const createMock = createMockCommonFunctions({
             fullArgs: '10',
             socket: mockSocket,
@@ -234,20 +304,13 @@ describe('pedidoEncerrar command', () => {
 describe('pedidoManager', () => {
     beforeEach(() => {
         closeOrder('test@g.us');
+        closeOrder('chat@g.us');
+        mockDecryptPollVote.mockReset();
     });
 
     describe('buildSummaryMessages', () => {
         it('should return "no votes" messages when votes map is empty', () => {
-            const fakeOrder: ActiveOrder = {
-                chatId: 'test@g.us',
-                pollMessageId: 'p1',
-                votes: new Map(),
-                startTime: Date.now(),
-                endTime: Date.now() + 1000,
-                timeoutId: setTimeout(() => {}, 0),
-                closed: false,
-            };
-            clearTimeout(fakeOrder.timeoutId);
+            const fakeOrder = createFakeOrder();
 
             const { summary, totals, mentions } = buildSummaryMessages(fakeOrder);
             expect(summary).toContain('Nenhum voto');
@@ -260,16 +323,7 @@ describe('pedidoManager', () => {
             votes.set('user1@s.whatsapp.net', new Set(['cuscuz', 'pizza']));
             votes.set('user2@s.whatsapp.net', new Set(['salada G']));
 
-            const fakeOrder: ActiveOrder = {
-                chatId: 'test@g.us',
-                pollMessageId: 'p2',
-                votes,
-                startTime: Date.now(),
-                endTime: Date.now() + 1000,
-                timeoutId: setTimeout(() => {}, 0),
-                closed: false,
-            };
-            clearTimeout(fakeOrder.timeoutId);
+            const fakeOrder = createFakeOrder({ pollMessageId: 'p2', votes });
 
             const { summary, totals, mentions } = buildSummaryMessages(fakeOrder);
 
@@ -291,23 +345,78 @@ describe('pedidoManager', () => {
     });
 
     describe('recordVote', () => {
-        it('should not record vote for unknown poll', () => {
-            recordVote('unknown-poll-id', 'user@s.whatsapp.net', []);
-            // No crash expected; nothing to assert beyond no error
+        beforeEach(() => {
+            createOrder('chat@g.us', 'poll99', POLL_SECRET, [BOT_JID, BOT_LID], 60000, jest.fn());
         });
 
-        it('should normalize JID device suffix when recording vote', () => {
-            const mockSocket = { sendMessage: jest.fn() };
-            // Manually create an order to test recordVote
-            const { createOrder } = require('../../../src/utils/pedidoManager');
-            createOrder('chat@g.us', 'poll99', 60000, jest.fn());
-
-            recordVote('poll99', 'user1:15@s.whatsapp.net', []);
-
-            const order = getOrder('chat@g.us');
-            expect(order?.votes.has('user1@s.whatsapp.net')).toBe(true);
-
+        afterEach(() => {
             closeOrder('chat@g.us');
+        });
+
+        it('should ignore votes for unknown polls', () => {
+            recordVote('unknown-poll-id', 'user@s.whatsapp.net', ENCRYPTED_VOTE);
+
+            expect(mockDecryptPollVote).not.toHaveBeenCalled();
+            expect(getOrder('chat@g.us')?.votes.size).toBe(0);
+        });
+
+        it('should decrypt with the poll secret, bot JID and normalized voter JID', () => {
+            mockDecryptPollVote.mockReturnValue({ selectedOptions: [] } as any);
+
+            recordVote('poll99', 'user1:15@s.whatsapp.net', ENCRYPTED_VOTE);
+
+            expect(mockDecryptPollVote).toHaveBeenCalledWith(ENCRYPTED_VOTE, {
+                pollCreatorJid: BOT_JID,
+                pollMsgId: 'poll99',
+                pollEncKey: POLL_SECRET,
+                voterJid: 'user1@s.whatsapp.net',
+            });
+            expect(getOrder('chat@g.us')?.votes.has('user1@s.whatsapp.net')).toBe(true);
+        });
+
+        it('should map decrypted option hashes to menu items', () => {
+            mockDecryptPollVote.mockReturnValue({
+                selectedOptions: [optionHash('cuscuz'), optionHash('pão misto'), optionHash('fora do menu')],
+            } as any);
+
+            recordVote('poll99', 'user1@s.whatsapp.net', ENCRYPTED_VOTE);
+
+            const votes = getOrder('chat@g.us')?.votes.get('user1@s.whatsapp.net');
+            expect(votes).toEqual(new Set(['cuscuz', 'pão misto']));
+        });
+
+        it('should replace the previous selection when the user votes again', () => {
+            mockDecryptPollVote
+                .mockReturnValueOnce({ selectedOptions: [optionHash('cuscuz')] } as any)
+                .mockReturnValueOnce({ selectedOptions: [optionHash('pizza')] } as any);
+
+            recordVote('poll99', 'user1@s.whatsapp.net', ENCRYPTED_VOTE);
+            recordVote('poll99', 'user1@s.whatsapp.net', ENCRYPTED_VOTE);
+
+            expect(getOrder('chat@g.us')?.votes.get('user1@s.whatsapp.net')).toEqual(new Set(['pizza']));
+        });
+
+        it('should fall back to the bot LID when decryption with the PN fails', () => {
+            mockDecryptPollVote
+                .mockImplementationOnce(() => { throw new Error('Unsupported state or unable to authenticate data'); })
+                .mockReturnValueOnce({ selectedOptions: [optionHash('pizza')] } as any);
+
+            recordVote('poll99', '987654321@lid', ENCRYPTED_VOTE);
+
+            expect(mockDecryptPollVote).toHaveBeenLastCalledWith(
+                ENCRYPTED_VOTE,
+                expect.objectContaining({ pollCreatorJid: BOT_LID })
+            );
+            expect(getOrder('chat@g.us')?.votes.get('987654321@lid')).toEqual(new Set(['pizza']));
+        });
+
+        it('should not record the vote when it cannot be decrypted', () => {
+            mockDecryptPollVote.mockImplementation(() => { throw new Error('bad decrypt'); });
+
+            recordVote('poll99', 'user1@s.whatsapp.net', ENCRYPTED_VOTE);
+
+            expect(mockDecryptPollVote).toHaveBeenCalledTimes(2);
+            expect(getOrder('chat@g.us')?.votes.size).toBe(0);
         });
     });
 });

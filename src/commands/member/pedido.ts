@@ -1,3 +1,4 @@
+import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { PREFIX } from "../../config";
 import {
     MENU_ITEMS,
@@ -54,15 +55,21 @@ export const pedido: Command = {
         });
 
         const pollMessageId = pollResult?.key?.id;
+        const pollEncKey = pollResult?.message?.messageContextInfo?.messageSecret;
 
-        if (!pollMessageId) {
+        if (!pollMessageId || !pollEncKey) {
             await sendErrorReply("Erro ao criar a enquete do pedido.");
             return;
         }
 
+        // Votes are encrypted with the poll creator's JID (the bot), not the group's
+        const pollCreatorJids = [socket.user?.id, socket.user?.lid]
+            .filter(Boolean)
+            .map(jidNormalizedUser);
+
         const durationMs = minutes * 60 * 1000;
 
-        createOrder(remoteJid, pollMessageId, durationMs, async () => {
+        createOrder(remoteJid, pollMessageId, pollEncKey, pollCreatorJids, durationMs, async () => {
             await closeAndSendResults(socket, remoteJid);
         });
 
