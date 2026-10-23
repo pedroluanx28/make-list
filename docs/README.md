@@ -4,6 +4,12 @@ Este é o índice geral da documentação de todos os comandos disponíveis no b
 
 ## Comandos Disponíveis
 
+### 🍽️ [Cardápio](./cardapio.md)
+**Comando:** `cardapio`, `produtos` (somente admins)  
+**Descrição:** Lista, adiciona, edita ou remove os itens e preços da enquete do `/pedido`. Alterações ficam bloqueadas enquanto houver pedido em aberto.
+
+---
+
 ### 🎲 [Sortear Times](./drawTeams.md)
 **Comando:** `drawteams`  
 **Descrição:** Sorteia times de forma equilibrada a partir de uma lista de participantes, com suporte a jogadores sementes (capitães).

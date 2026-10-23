@@ -27,7 +27,7 @@ On first run the bot asks for a phone number in the terminal and prints a pairin
 
 **Command discovery is runtime, filesystem-based, and reads compiled JS.** `readCommandImports()` in `utils/index.ts` scans each subdirectory of `COMMANDS_DIR` (`dist/commands/`) and `require`s every `.js` file not starting with `_`. Consequences:
 - Changes to commands only take effect after `tsc`; deleted `.ts` files can leave stale `.js` in `dist/` that still load (use `dev:force`).
-- The **subdirectory name is the permission level**: `member`, `admin`, or `owner` (checked in `middlewares/checkPermission.ts` against group metadata). Only `member/` exists today.
+- The **subdirectory name is the permission level**: `member`, `admin`, or `owner` (checked in `middlewares/checkPermission.ts` against group metadata). `admin/` sorts before `member/`, so its aliases are matched first. `checkPermission` denies admin/owner commands outside groups.
 - Each command file exports a named object of type `Command` (`name`, `description`, `commands` aliases, `usage`, `handle`). The export name is irrelevant; the first export of the module is used. Template: `src/commands/_sample.ts`.
 - Alias matching uses `formatCommand(alias).includes(formatCommand(input))` (lowercased, accents stripped, alphanumerics only), so a short input can match a longer alias — first match across files wins.
 
@@ -39,6 +39,7 @@ On first run the bot asks for a phone number in the terminal and prints a pairin
 
 **Stateful features:**
 - Reminders (`utils/reminderManager.ts`) persist to `assets/reminders.json` and are rescheduled with `setTimeout` on startup.
+- The `/pedido` menu (`utils/menuManager.ts`) is global and persists to `assets/menu.json` (falls back to `DEFAULT_MENU_ITEMS`). It is edited with the admin-only `/cardapio` command, which blocks changes while any order is open. Each order keeps a snapshot of the menu in `ActiveOrder.menuItems`.
 - `/pedido` orders (`utils/pedidoManager.ts`) are in-memory only (lost on restart). They use WhatsApp polls: the poll key is `messageContextInfo.messageSecret` from the message `sendMessage` returns, and votes are encrypted with the bot's JID (PN or LID) as poll creator. `onMessagesUpsert` routes `pollUpdateMessage` votes to `recordVote`, which decrypts them manually with `decryptPollVote` (this Baileys version doesn't emit decrypted `pollUpdates`).
 
 **Baileys patch:** `patches/@whiskeysockets+baileys+6.7.18.patch` fixes a `long` type import in Baileys' `.d.ts`. There is no `postinstall` script, so apply it manually with `npx patch-package` after `npm install` if `tsc` fails on that type.

@@ -1,7 +1,7 @@
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { PREFIX } from "../../config";
+import { getMenuItems } from "../../utils/menuManager";
 import {
-    MENU_ITEMS,
     createOrder,
     closeAndSendResults,
     getOrder,
@@ -46,10 +46,12 @@ export const pedido: Command = {
             return;
         }
 
+        const menuItems = getMenuItems();
+
         const pollResult = await socket.sendMessage(remoteJid, {
             poll: {
                 name: "🍽️ Pedido — Escolha seus itens:",
-                values: MENU_ITEMS.map((item) => item.name),
+                values: menuItems.map((item) => item.name),
                 selectableCount: 0,
             },
         });
@@ -69,7 +71,7 @@ export const pedido: Command = {
 
         const durationMs = minutes * 60 * 1000;
 
-        createOrder(remoteJid, pollMessageId, pollEncKey, pollCreatorJids, durationMs, async () => {
+        createOrder(remoteJid, pollMessageId, pollEncKey, pollCreatorJids, menuItems, durationMs, async () => {
             await closeAndSendResults(socket, remoteJid);
         });
 
