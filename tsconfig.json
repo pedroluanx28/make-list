@@ -7,7 +7,10 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
+    "rootDir": "src",
     "skipLibCheck": true
   },
-  "lib": ["es2015"]
+  "lib": ["es2015"],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests"]
 }
