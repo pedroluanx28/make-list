@@ -5,6 +5,7 @@ import { MenuItem, formatPrice } from "./menuManager";
 
 export type ActiveOrder = {
     chatId: string;
+    creatorJid: string; // who opened the order; only they can close it manually
     pollMessageId: string;
     pollEncKey: Uint8Array; // messageContextInfo.messageSecret of the poll
     pollCreatorJids: string[]; // bot JIDs (PN and LID); votes are encrypted with one of them
@@ -41,6 +42,7 @@ export function releaseOrderReservation(chatId: string): void {
 
 export function createOrder(
     chatId: string,
+    creatorJid: string,
     pollMessageId: string,
     pollEncKey: Uint8Array,
     pollCreatorJids: string[],
@@ -64,6 +66,7 @@ export function createOrder(
 
     const order: ActiveOrder = {
         chatId,
+        creatorJid,
         pollMessageId,
         pollEncKey,
         pollCreatorJids,

@@ -14,7 +14,7 @@ export const pedido: Command = {
     description: "Criar um pedido com enquete temporizada",
     commands: ["pedido", "lidineide"],
     usage: `${PREFIX}pedido <tempo_em_minutos>\nExemplo: ${PREFIX}pedido 30`,
-    handle: async ({ socket, remoteJid, sendReply, sendErrorReply, fullArgs }) => {
+    handle: async ({ socket, remoteJid, userJid, sendReply, sendErrorReply, fullArgs }) => {
         const timeStr = fullArgs.trim();
 
         if (!timeStr) {
@@ -49,7 +49,7 @@ export const pedido: Command = {
 
         if (!reserveOrder(remoteJid)) {
             await sendErrorReply(
-                `Já existe um pedido ativo neste grupo! Use ${PREFIX}pedido-encerrar para encerrá-lo primeiro.`
+                `Já existe um pedido ativo neste grupo! Aguarde o fim do tempo ou peça para quem abriu usar ${PREFIX}pedido-encerrar.`
             );
             return;
         }
@@ -80,7 +80,7 @@ export const pedido: Command = {
 
             const durationMs = minutes * 60 * 1000;
 
-            createOrder(remoteJid, pollMessageId, pollEncKey, pollCreatorJids, menuItems, durationMs, async () => {
+            createOrder(remoteJid, userJid, pollMessageId, pollEncKey, pollCreatorJids, menuItems, durationMs, async () => {
                 await closeAndSendResults(socket, remoteJid);
             });
         } finally {

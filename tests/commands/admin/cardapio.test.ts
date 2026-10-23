@@ -55,7 +55,7 @@ describe('cardapio command', () => {
         });
 
         it('should list the menu even while an order is open', async () => {
-            createOrder('other@g.us', 'poll1', new Uint8Array(32), [], DEFAULT_MENU_ITEMS, 60000, jest.fn());
+            createOrder('other@g.us', 'user@s.whatsapp.net', 'poll1', new Uint8Array(32), [], DEFAULT_MENU_ITEMS, 60000, jest.fn());
 
             const mock = await run('');
 
@@ -185,14 +185,14 @@ describe('cardapio command', () => {
             'editar 1 | | 8',
             'remover 1',
         ])('should block "%s" while an order is open in any group', async (args) => {
-            createOrder('other@g.us', 'poll1', new Uint8Array(32), [], DEFAULT_MENU_ITEMS, 60000, jest.fn());
+            createOrder('other@g.us', 'user@s.whatsapp.net', 'poll1', new Uint8Array(32), [], DEFAULT_MENU_ITEMS, 60000, jest.fn());
 
             await expect(run(args)).rejects.toThrow(WarningError);
             expect(getMenuItems()).toEqual(DEFAULT_MENU_ITEMS);
         });
 
         it('should allow changes again after the order is closed', async () => {
-            createOrder('other@g.us', 'poll1', new Uint8Array(32), [], DEFAULT_MENU_ITEMS, 60000, jest.fn());
+            createOrder('other@g.us', 'user@s.whatsapp.net', 'poll1', new Uint8Array(32), [], DEFAULT_MENU_ITEMS, 60000, jest.fn());
             closeOrder('other@g.us');
 
             await run('adicionar suco | 5');
