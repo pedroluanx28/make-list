@@ -7,19 +7,25 @@ export const onMessagesUpsert = async ({ socket, messages }) => {
         return;
     }
 
-    const webMessage = messages[0];
+    // Several poll votes can arrive in the same event
+    for (const message of messages) {
+        const pollUpdate = message.message?.pollUpdateMessage;
+        if (!pollUpdate) continue;
 
-    // Handle poll vote updates
-    const pollUpdate = webMessage.message?.pollUpdateMessage;
-    if (pollUpdate) {
-        const voterJid = webMessage.key?.fromMe
-            ? socket.user?.id
-            : webMessage.key?.participant || webMessage.key?.remoteJid;
+        const { key } = message;
+        // The voter may have encrypted the vote with its PN or its LID
+        const voterJids = key?.fromMe
+            ? [socket.user?.id, socket.user?.lid]
+            : [key?.participant || key?.remoteJid, key?.participantPn, key?.participantLid];
         const pollMessageId = pollUpdate.pollCreationMessageKey?.id;
 
-        if (voterJid && pollMessageId && pollUpdate.vote) {
-            recordVote(pollMessageId, voterJid, pollUpdate.vote);
+        if (pollMessageId && pollUpdate.vote) {
+            recordVote(pollMessageId, voterJids, pollUpdate.vote);
         }
+    }
+
+    const webMessage = messages[0];
+    if (webMessage.message?.pollUpdateMessage) {
         return;
     }
 

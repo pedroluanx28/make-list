@@ -3,14 +3,6 @@ import { PREFIX, COMMANDS_DIR } from "../config";
 import fs from "fs";
 import path from "path";
 
-type Command = {
-    name: string,
-    description: string,
-    commands: string[],
-    usage: string,
-    handle: () => void
-}
-
 const question = (message: string) => {
     const readlineInterface = readline.createInterface({
         input: process.stdin,
@@ -137,36 +129,39 @@ const getContent = (webMessage, context) => {
     );
 };
 
-// Requer refatoração
+// Fuzzy matches favor the lowest permission level, so a short input doesn't hit an admin-only command
+const COMMAND_TYPE_PRIORITY = ["member", "admin", "owner"];
+
+// Exact alias first, then alias prefix, then any substring (legacy behavior)
+const COMMAND_MATCHERS = [
+    (alias: string, input: string) => alias === input,
+    (alias: string, input: string) => alias.startsWith(input),
+    (alias: string, input: string) => alias.includes(input),
+];
+
 const findCommandImport = (commandName) => {
-    const command = readCommandImports();
+    const input = formatCommand(commandName);
+    if (!input) {
+        return { type: "", command: null };
+    }
 
-    let typeReturn = "";
-    let targetCommandReturn = null;
+    const commandsByType = Object.entries(readCommandImports()).sort(
+        ([a], [b]) => COMMAND_TYPE_PRIORITY.indexOf(a) - COMMAND_TYPE_PRIORITY.indexOf(b)
+    );
 
-    for (const [type, commands] of Object.entries(command)) {
-        if (!(commands as any).length) continue;
-        let commandConstName = "";
+    for (const matches of COMMAND_MATCHERS) {
+        for (const [type, modules] of commandsByType) {
+            for (const module of modules as any[]) {
+                const command = Object.values(module)[0] as Command;
 
-        const targetCommand = (commands as any).find((cmd) => {
-            const [formattedCommandName, array] = Object.entries(cmd)[0];
-
-            commandConstName = formattedCommandName;
-
-            return (array as Command)?.commands.find((c) => formatCommand(c).includes(formatCommand(commandName)));
-        });
-
-        if (targetCommand) {
-            typeReturn = type;
-            targetCommandReturn = targetCommand[commandConstName];
-            break;
+                if (command?.commands?.some((alias) => matches(formatCommand(alias), input))) {
+                    return { type, command };
+                }
+            }
         }
     }
 
-    return {
-        type: typeReturn,
-        command: targetCommandReturn,
-    };
+    return { type: "", command: null };
 };
 
 const readCommandImports = () => {

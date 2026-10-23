@@ -2,9 +2,11 @@ import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { PREFIX } from "../../config";
 import { getMenuItems } from "../../utils/menuManager";
 import {
+    MAX_ORDER_MINUTES,
     createOrder,
     closeAndSendResults,
-    getOrder,
+    releaseOrderReservation,
+    reserveOrder,
 } from "../../utils/pedidoManager";
 
 export const pedido: Command = {
@@ -38,42 +40,53 @@ export const pedido: Command = {
             return;
         }
 
-        const existing = getOrder(remoteJid);
-        if (existing && !existing.closed) {
+        if (minutes > MAX_ORDER_MINUTES) {
+            await sendErrorReply(
+                `Tempo inválido! O tempo máximo é de ${MAX_ORDER_MINUTES} minutos (24 horas).`
+            );
+            return;
+        }
+
+        if (!reserveOrder(remoteJid)) {
             await sendErrorReply(
                 `Já existe um pedido ativo neste grupo! Use ${PREFIX}pedido-encerrar para encerrá-lo primeiro.`
             );
             return;
         }
 
-        const menuItems = getMenuItems();
+        try {
+            const menuItems = getMenuItems();
 
-        const pollResult = await socket.sendMessage(remoteJid, {
-            poll: {
-                name: "🍽️ Pedido — Escolha seus itens:",
-                values: menuItems.map((item) => item.name),
-                selectableCount: 0,
-            },
-        });
+            const pollResult = await socket.sendMessage(remoteJid, {
+                poll: {
+                    name: "🍽️ Pedido — Escolha seus itens:",
+                    values: menuItems.map((item) => item.name),
+                    selectableCount: 0,
+                },
+            });
 
-        const pollMessageId = pollResult?.key?.id;
-        const pollEncKey = pollResult?.message?.messageContextInfo?.messageSecret;
+            const pollMessageId = pollResult?.key?.id;
+            const pollEncKey = pollResult?.message?.messageContextInfo?.messageSecret;
 
-        if (!pollMessageId || !pollEncKey) {
-            await sendErrorReply("Erro ao criar a enquete do pedido.");
-            return;
+            if (!pollMessageId || !pollEncKey) {
+                await sendErrorReply("Erro ao criar a enquete do pedido.");
+                return;
+            }
+
+            // Votes are encrypted with the poll creator's JID (the bot), not the group's
+            const pollCreatorJids = [socket.user?.id, socket.user?.lid]
+                .filter(Boolean)
+                .map(jidNormalizedUser);
+
+            const durationMs = minutes * 60 * 1000;
+
+            createOrder(remoteJid, pollMessageId, pollEncKey, pollCreatorJids, menuItems, durationMs, async () => {
+                await closeAndSendResults(socket, remoteJid);
+            });
+        } finally {
+            // No-op once createOrder has registered the order
+            releaseOrderReservation(remoteJid);
         }
-
-        // Votes are encrypted with the poll creator's JID (the bot), not the group's
-        const pollCreatorJids = [socket.user?.id, socket.user?.lid]
-            .filter(Boolean)
-            .map(jidNormalizedUser);
-
-        const durationMs = minutes * 60 * 1000;
-
-        createOrder(remoteJid, pollMessageId, pollEncKey, pollCreatorJids, menuItems, durationMs, async () => {
-            await closeAndSendResults(socket, remoteJid);
-        });
 
         const timeDisplay = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
         await sendReply(

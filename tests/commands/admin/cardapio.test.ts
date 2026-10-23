@@ -15,7 +15,7 @@ jest.mock('fs', () => ({
 
 import { cardapio } from '../../../src/commands/admin/cardapio';
 import { pedido } from '../../../src/commands/member/pedido';
-import { InvalidParameterError, WarningError } from '../../../src/errors';
+import { DangerError, InvalidParameterError, WarningError } from '../../../src/errors';
 import { DEFAULT_MENU_ITEMS, MAX_MENU_ITEMS, getMenuItems } from '../../../src/utils/menuManager';
 import { closeOrder, createOrder, getOrder } from '../../../src/utils/pedidoManager';
 import { createMockCommonFunctions } from '../../mocks/commonFunctions';
@@ -198,6 +198,28 @@ describe('cardapio command', () => {
             await run('adicionar suco | 5');
 
             expect(getMenuItems()).toContainEqual({ name: 'suco', price: 500 });
+        });
+    });
+
+    describe('invalid menu.json', () => {
+        const writeMenuFile = (content: string) => {
+            mockFiles.set(require('path').join(__dirname, '../../../assets/menu.json'), content);
+        };
+
+        it.each([
+            ['malformed JSON', '{ not json'],
+            ['not an array', '{"name": "cuscuz", "price": 700}'],
+            ['too few items', '[{"name": "cuscuz", "price": 700}]'],
+            ['invalid price', '[{"name": "a", "price": 7.5}, {"name": "b", "price": 600}]'],
+            ['duplicated names', '[{"name": "a", "price": 700}, {"name": "A", "price": 600}]'],
+        ])('should refuse to load a menu with %s instead of using the defaults', async (_label, content) => {
+            jest.spyOn(console, 'error').mockImplementation(() => {});
+            writeMenuFile(content);
+
+            await expect(run('')).rejects.toThrow(DangerError);
+            await expect(run('adicionar suco | 5')).rejects.toThrow(DangerError);
+            // the user's file is left untouched
+            expect(Array.from(mockFiles.values())).toEqual([content]);
         });
     });
 

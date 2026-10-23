@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { InvalidParameterError, WarningError } from "../errors";
+import { DangerError, InvalidParameterError, WarningError } from "../errors";
 import { PREFIX } from "../config";
 
 export type MenuItem = {
@@ -26,16 +26,39 @@ const MAX_NAME_LENGTH = 100;
 
 const MENU_FILE = path.join(__dirname, "../../assets/menu.json");
 
+const isValidMenu = (items: unknown): items is MenuItem[] =>
+    Array.isArray(items) &&
+    items.length >= MIN_MENU_ITEMS &&
+    items.length <= MAX_MENU_ITEMS &&
+    items.every(
+        (item) =>
+            typeof item?.name === "string" &&
+            item.name.trim() !== "" &&
+            Number.isInteger(item.price) &&
+            item.price > 0
+    ) &&
+    new Set(items.map((item) => item.name.toLocaleLowerCase())).size === items.length;
+
 export const getMenuItems = (): MenuItem[] => {
+    if (!fs.existsSync(MENU_FILE)) {
+        return DEFAULT_MENU_ITEMS.map((item) => ({ ...item }));
+    }
+
+    // Never fall back to the defaults here: the next save would overwrite the custom menu
+    let items: unknown;
     try {
-        if (fs.existsSync(MENU_FILE)) {
-            return JSON.parse(fs.readFileSync(MENU_FILE, "utf8"));
-        }
+        items = JSON.parse(fs.readFileSync(MENU_FILE, "utf8"));
     } catch (error) {
         console.error("Erro ao carregar cardápio:", error);
     }
 
-    return DEFAULT_MENU_ITEMS.map((item) => ({ ...item }));
+    if (!isValidMenu(items)) {
+        throw new DangerError(
+            `O arquivo assets/menu.json está inválido. Corrija-o ou apague-o para voltar ao cardápio padrão.`
+        );
+    }
+
+    return items;
 };
 
 const saveMenuItems = (items: MenuItem[]) => {
