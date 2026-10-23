@@ -13,22 +13,30 @@ export type ActiveOrder = {
     startTime: number;
     endTime: number;
     timeoutId: ReturnType<typeof setTimeout>;
-    closed: boolean;
 };
+
+// Node's setTimeout fires immediately for delays above 2^31-1 ms (~24.8 days)
+export const MAX_ORDER_MINUTES = 24 * 60;
 
 // In-memory storage: chatId -> ActiveOrder
 const activeOrders = new Map<string, ActiveOrder>();
 
-function hashOption(name: string): Buffer {
-    return createHash("sha256").update(name).digest();
+// Chats whose poll is being sent: reserved before the await so two /pedido can't both pass the check
+const pendingOrders = new Set<string>();
+
+function hashOption(name: string): string {
+    return createHash("sha256").update(name).digest("hex");
 }
 
-function buffersEqual(a: Buffer, b: Uint8Array): boolean {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) return false;
-    }
+export function reserveOrder(chatId: string): boolean {
+    if (activeOrders.has(chatId) || pendingOrders.has(chatId)) return false;
+
+    pendingOrders.add(chatId);
     return true;
+}
+
+export function releaseOrderReservation(chatId: string): void {
+    pendingOrders.delete(chatId);
 }
 
 export function createOrder(
@@ -38,12 +46,21 @@ export function createOrder(
     pollCreatorJids: string[],
     menuItems: MenuItem[],
     durationMs: number,
-    closeCallback: () => void
+    closeCallback: () => void | Promise<void>
 ): void {
     const existing = activeOrders.get(chatId);
-    if (existing && !existing.closed) {
+    if (existing) {
         clearTimeout(existing.timeoutId);
     }
+
+    const onTimeout = async () => {
+        // An unhandled rejection inside a timer would stop the whole bot
+        try {
+            await closeCallback();
+        } catch (error) {
+            console.error(`Erro ao encerrar o pedido de ${chatId}:`, error);
+        }
+    };
 
     const order: ActiveOrder = {
         chatId,
@@ -54,11 +71,11 @@ export function createOrder(
         votes: new Map(),
         startTime: Date.now(),
         endTime: Date.now() + durationMs,
-        timeoutId: setTimeout(closeCallback, durationMs),
-        closed: false,
+        timeoutId: setTimeout(onTimeout, durationMs),
     };
 
     activeOrders.set(chatId, order);
+    pendingOrders.delete(chatId);
 }
 
 export function getOrder(chatId: string): ActiveOrder | undefined {
@@ -66,15 +83,14 @@ export function getOrder(chatId: string): ActiveOrder | undefined {
 }
 
 export function hasOpenOrder(): boolean {
-    return Array.from(activeOrders.values()).some((order) => !order.closed);
+    return activeOrders.size > 0 || pendingOrders.size > 0;
 }
 
 export function closeOrder(chatId: string): ActiveOrder | null {
     const order = activeOrders.get(chatId);
-    if (!order || order.closed) return null;
+    if (!order) return null;
 
     clearTimeout(order.timeoutId);
-    order.closed = true;
     activeOrders.delete(chatId);
 
     return order;
@@ -82,55 +98,61 @@ export function closeOrder(chatId: string): ActiveOrder | null {
 
 function decryptSelectedOptions(
     order: ActiveOrder,
-    voterJid: string,
+    voterJids: string[],
     encryptedVote: proto.Message.IPollEncValue
 ): Uint8Array[] | null {
-    // In LID-addressed groups the vote is encrypted with the bot's LID instead of its PN
-    for (const pollCreatorJid of order.pollCreatorJids) {
-        try {
-            const vote = decryptPollVote(encryptedVote, {
-                pollCreatorJid,
-                pollMsgId: order.pollMessageId,
-                pollEncKey: order.pollEncKey,
-                voterJid,
-            });
+    // In LID-addressed groups the vote is encrypted with LIDs instead of PNs,
+    // for the bot (poll creator) and for the voter
+    for (const voterJid of voterJids) {
+        for (const pollCreatorJid of order.pollCreatorJids) {
+            try {
+                const vote = decryptPollVote(encryptedVote, {
+                    pollCreatorJid,
+                    pollMsgId: order.pollMessageId,
+                    pollEncKey: order.pollEncKey,
+                    voterJid,
+                });
 
-            return vote.selectedOptions || [];
-        } catch {
-            // wrong creator JID: GCM auth fails, try the next one
+                return vote.selectedOptions || [];
+            } catch {
+                // wrong JID pair: GCM auth fails, try the next one
+            }
         }
     }
 
     return null;
 }
 
+// voterJids: every known form of the voter's JID (PN and LID); the first one identifies the voter
 export function recordVote(
     pollMessageId: string,
-    voterJid: string,
+    voterJids: string[],
     encryptedVote: proto.Message.IPollEncValue
 ): void {
-    // Normalize JID (remove device suffix like :15)
-    const normalizedJid = jidNormalizedUser(voterJid);
+    // Normalize JIDs (remove device suffix like :15)
+    const normalizedJids = [...new Set(voterJids.filter(Boolean).map(jidNormalizedUser))];
+    if (!normalizedJids.length) return;
 
     const order = Array.from(activeOrders.values()).find(
-        (order) => order.pollMessageId === pollMessageId && !order.closed
+        (order) => order.pollMessageId === pollMessageId
     );
     if (!order) return;
 
-    const selectedOptionHashes = decryptSelectedOptions(order, normalizedJid, encryptedVote);
+    const selectedOptionHashes = decryptSelectedOptions(order, normalizedJids, encryptedVote);
     if (!selectedOptionHashes) {
-        console.log(`Não foi possível descriptografar o voto de ${normalizedJid} na enquete ${pollMessageId}`);
+        console.log(`Não foi possível descriptografar o voto de ${normalizedJids[0]} na enquete ${pollMessageId}`);
         return;
     }
 
+    const namesByHash = new Map(order.menuItems.map((item) => [hashOption(item.name), item.name]));
     const selectedNames = new Set<string>();
     for (const hash of selectedOptionHashes) {
-        const item = order.menuItems.find((item) => buffersEqual(hashOption(item.name), hash));
-        if (item) selectedNames.add(item.name);
+        const name = namesByHash.get(Buffer.from(hash).toString("hex"));
+        if (name) selectedNames.add(name);
     }
 
     // Replace the voter's selection (WhatsApp polls reflect current state)
-    order.votes.set(normalizedJid, selectedNames);
+    order.votes.set(normalizedJids[0], selectedNames);
 }
 
 export function buildSummaryMessages(order: ActiveOrder): {

@@ -16,6 +16,12 @@ Este é o índice geral da documentação de todos os comandos disponíveis no b
 
 ---
 
+### 🛒 [Pedido](./pedido.md)
+**Comando:** `pedido`, `lidineide`; para encerrar, `pedido-encerrar`, `lidineide-encerrar`  
+**Descrição:** Abre uma enquete com os itens do cardápio por um tempo definido e, ao encerrar, envia o resumo dos itens e o total de cada pessoa.
+
+---
+
 ### 📢 [Marcar Todos](./markAll.md)
 **Comando:** `markall`, `all`, `todes`  
 **Descrição:** Marca (menciona) todos os membros de um grupo de uma só vez, útil para anúncios importantes.
