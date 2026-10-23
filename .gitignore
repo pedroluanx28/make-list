@@ -8,3 +8,6 @@ coverage
 # saída do tsc gerada por engano dentro de tests/
 tests/**/*.js
 tests/**/*.js.map
+
+# configuração local do Claude Code
+.claude/settings.local.json

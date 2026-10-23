@@ -4,21 +4,31 @@ Bot para WhatsApp desenvolvido em TypeScript que oferece comandos úteis para or
 
 ## Características
 
-- ✅ **Comandos de produtividade** para grupos do WhatsApp  
+- ✅ **Comandos de produtividade** para grupos do WhatsApp
 - ✅ **Sorteio de times** com distribuição equilibrada
 - ✅ **Templates personalizáveis** para eventos
 - ✅ **Menção em massa** para comunicados importantes
+- ✅ **Pedidos por enquete** com cardápio configurável e resumo de totais
+- ✅ **Lembretes** persistentes, que sobrevivem a reinicializações
 - ✅ **Testes unitários** com 100% de cobertura nos comandos
 - ✅ **TypeScript** para maior confiabilidade
 
 ## Comandos Disponíveis
 
-| Comando | Aliases | Descrição |
-|---------|---------|-----------|
-| `/ping` | `ping` | Verifica conectividade do bot |
-| `/markall` | `markall`, `all`, `todes` | Marca todos os membros do grupo |
-| `/racha` | `racha`, `templatelist` | Cria templates para eventos |
-| `/drawteams` | `drawteams` | Sorteia times de forma equilibrada |
+| Comando | Aliases | Permissão | Descrição |
+|---------|---------|-----------|-----------|
+| `/ping` | `ping` | membro | Verifica conectividade do bot |
+| `/markall` | `markall`, `all`, `todes` | membro | Marca todos os membros do grupo |
+| `/racha` | `racha`, `templatelist` | membro | Cria templates para eventos |
+| `/drawteams` | `drawteams` | membro | Sorteia times de forma equilibrada |
+| `/pedido` | `pedido`, `lidineide` | membro | Abre uma enquete de pedido com o cardápio |
+| `/pedido-encerrar` | `pedido-encerrar`, `lidineide-encerrar` | membro | Encerra o pedido ativo e envia o resumo |
+| `/cardapio` | `cardapio`, `produtos` | admin | Lista e edita os itens do cardápio do pedido |
+| `/lembrete` | `lembrete`, `reminder`, `lembrar` | membro | Cria um lembrete (`30min`, `2h`, `1d`, `1w`) |
+| `/lembretes` | `lembretes`, `reminders`, `listarlembretes` | membro | Lista seus lembretes ativos |
+| `/deletarlembrete` | `deletarlembrete`, `deletereminder`, `removerlembrete` | membro | Remove um lembrete pelo ID |
+
+Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
 
 ## Instalação e Execução
 
@@ -36,6 +46,8 @@ npm run dev
 npm run dev:force
 ```
 
+Na primeira execução o bot pede o número de telefone no terminal e exibe um código de pareamento. As credenciais ficam em `assets/auth/baileys/` (ignorado pelo git).
+
 ## Testando
 
 ```bash
@@ -49,33 +61,30 @@ npm run test:watch
 npm run test:coverage
 ```
 
-### Cobertura dos Testes
-
-O projeto mantém **100% de cobertura** em todos os comandos:
-
-- **ping**: 100% cobertura
-- **markAll**: 100% cobertura  
-- **templateList**: 100% cobertura
-- **drawTeams**: 100% cobertura
+Todo comando em `src/commands/` deve ter 100% de cobertura. Rode `npm run test:coverage` para conferir.
 
 ## Estrutura do Projeto
 
 ```
 src/
 ├── commands/
-│   └── member/          # Comandos de membros
-├── @types/              # Definições de tipos
+│   ├── admin/           # Comandos restritos a admins do grupo
+│   ├── member/          # Comandos liberados para todos
+│   └── _sample.ts       # Template para novos comandos
+├── @types/              # Tipos globais (Command, CommonFunctions)
 ├── errors/              # Classes de erro personalizadas
 ├── middlewares/         # Middlewares do bot
-├── utils/              # Utilitários gerais
-├── config.ts           # Configurações
-├── connection.ts       # Conexão WhatsApp
-└── index.ts           # Ponto de entrada
+├── utils/               # Utilitários e estado (lembretes, pedidos, cardápio)
+├── config.ts            # Configurações
+├── connection.ts        # Conexão WhatsApp
+└── index.ts             # Ponto de entrada
 
-tests/
-├── commands/           # Testes dos comandos
-├── mocks/             # Mocks para testes
-└── setup.ts          # Configuração dos testes
+tests/                   # Espelha src/
+├── commands/            # Testes dos comandos
+├── middlewares/         # Testes dos middlewares
+├── utils/               # Testes dos utilitários
+├── mocks/               # Mocks para testes
+└── setup.ts             # Configuração dos testes
 ```
 
 ## Tecnologias
@@ -91,19 +100,17 @@ Documentação detalhada dos comandos disponível em [`docs/README.md`](./docs/R
 
 ## Contribuindo
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Implemente os testes para a nova funcionalidade
-4. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
-5. Push para a branch (`git push origin feature/nova-feature`)
-6. Abra um Pull Request
+1. Crie uma branch no padrão `tipo/descricao-curta` (ex: `feat/comando-enquete`, `fix/lembrete-duplicado`)
+2. Implemente a mudança com testes
+3. Faça commits no padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br/) em português (ex: `feat(pedido): permite encerrar pelo admin`)
+4. Abra um Pull Request para `main`
 
-### Padrões de Desenvolvimento
+### Checklist para novos comandos
 
-- **Testes obrigatórios** para novos comandos
-- **Cobertura mínima de 100%** nos comandos
-- **TypeScript** para tipagem forte
-- **Documentação** atualizada para novas features
+- [ ] Arquivo em `src/commands/<permissao>/` a partir do `_sample.ts`
+- [ ] Testes em `tests/commands/<permissao>/` com 100% de cobertura
+- [ ] Página em `docs/` seguindo [`docs/_template.md`](./docs/_template.md)
+- [ ] Entrada no índice `docs/README.md` e na tabela de comandos deste README
 
 ## Licença
 
