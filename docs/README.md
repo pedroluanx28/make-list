@@ -10,6 +10,12 @@ Este é o índice geral da documentação de todos os comandos disponíveis no b
 
 ---
 
+### 📋 [Comandos](./showCommands.md)
+**Comando:** `comandos`, `ajuda`, `help`  
+**Descrição:** Lista os comandos do bot que você pode usar, agrupados por permissão. Admins também veem os comandos de admin.
+
+---
+
 ### 🎲 [Sortear Times](./drawTeams.md)
 **Comando:** `drawteams`  
 **Descrição:** Sorteia times de forma equilibrada a partir de uma lista de participantes, com suporte a jogadores sementes (capitães).

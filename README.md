@@ -17,6 +17,7 @@ Bot para WhatsApp desenvolvido em TypeScript que oferece comandos úteis para or
 
 | Comando | Aliases | Permissão | Descrição |
 |---------|---------|-----------|-----------|
+| `/comandos` | `comandos`, `ajuda`, `help` | membro | Lista os comandos que você pode usar |
 | `/ping` | `ping` | membro | Verifica conectividade do bot |
 | `/markall` | `markall`, `all`, `todes` | membro | Marca todos os membros do grupo |
 | `/racha` | `racha`, `templatelist` | membro | Cria templates para eventos |
