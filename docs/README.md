@@ -22,6 +22,12 @@ Este é o índice geral da documentação de todos os comandos disponíveis no b
 
 ---
 
+### ⏰ [Lembretes](./reminders.md)
+**Comando:** `lembrete`, `lembretes`, `deletarlembrete` (e aliases)  
+**Descrição:** Cria lembretes com tempo relativo (`30min`, `2h`, `1d`, `1w`), lista os seus lembretes ativos e remove pelo ID. Os lembretes persistem após reiniciar o bot.
+
+---
+
 ### 📢 [Marcar Todos](./markAll.md)
 **Comando:** `markall`, `all`, `todes`  
 **Descrição:** Marca (menciona) todos os membros de um grupo de uma só vez, útil para anúncios importantes.
@@ -81,10 +87,7 @@ npm run build
 
 ### Cobertura de Testes
 
-- **ping**: Testa conectividade e resposta do bot
-- **markAll**: Testa menção de membros em grupos  
-- **templateList**: Testa criação de templates com parâmetros
-- **drawTeams**: Testa sorteio de times e distribuição de jogadores
+Todo comando listado acima tem testes e a meta é 100% de cobertura em `src/commands/`. Confira com `npm run test:coverage`.
 
 ### Framework Utilizado
 
@@ -94,14 +97,15 @@ npm run build
 
 ### Estrutura dos Testes
 
+`tests/` espelha `src/`: o teste de `src/commands/member/ping.ts` fica em `tests/commands/member/ping.test.ts`.
+
 ```
 tests/
 ├── commands/
-│   └── member/
-│       ├── ping.test.ts
-│       ├── markAll.test.ts
-│       ├── templateList.test.ts
-│       └── drawTeams.test.ts
+│   ├── admin/          # Testes dos comandos de admin
+│   └── member/         # Testes dos comandos de membros
+├── middlewares/        # Testes dos middlewares
+├── utils/              # Testes dos utilitários (ex: reminderManager)
 ├── mocks/
 │   └── commonFunctions.ts
 └── setup.ts
@@ -111,8 +115,8 @@ tests/
 
 Para adicionar documentação de novos comandos:
 
-1. Crie um novo arquivo `.md` na pasta `docs/`
-2. Siga a estrutura padrão apresentada nos exemplos existentes
+1. Copie [`_template.md`](./_template.md) para `docs/<nomeDoComando>.md`
+2. Preencha todas as seções do template
 3. Adicione uma entrada neste arquivo índice
 4. Mantenha a documentação atualizada conforme o comando evolui
 
