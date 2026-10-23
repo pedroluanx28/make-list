@@ -29,8 +29,10 @@ Quem está no grupo não tem como descobrir pelo WhatsApp quais comandos o bot a
 | `usage` com várias linhas (ex.: `/pedido`) | Usar só a primeira linha | Mantém uma linha por comando; o exemplo fica na doc | y |
 | `usage` cuja primeira linha traz nota após ` — ` (ex.: `/cardapio — lista os itens`) | Cortar a partir do primeiro ` — ` | Sem isso a linha fica com dois `—` (achado no teste com os comandos reais) | n |
 | Comando sem `description` | Mostrar só o uso | `description` é opcional no tipo `Command` | n |
-| Aliases | `comandos`, `ajuda`, `help` | Nomes óbvios em pt-BR e inglês | n |
-| Nome do arquivo | `src/commands/member/showCommands.ts` | Dentro de `member/` os arquivos são testados em ordem alfabética; um nome depois de `markAll.ts` evita que `ajuda` roube o input `/a` (hoje → `markall`) | n |
+| Aliases | `comandos`, `ajuda`, `help` | Nomes óbvios em pt-BR e inglês | y |
+| Nome do arquivo | `src/commands/member/showCommands.ts` | Dentro de `member/` os arquivos são testados em ordem alfabética; um nome depois de `markAll.ts` evita que `ajuda` roube o input `/a` (hoje → `markall`) | y |
+| Inputs curtos que mudam de destino | `/c`, `/u`, `/da`, `/os` (antes `cardapio`) e `/h` (antes `racha`) passam a ir para `comandos` | `/c` e `/h` aprovados pelo usuário; `/u`, `/da` e `/os` eram matches acidentais por substring de `cardapio`, não atalhos reais | y (`/c`, `/h`); n (`/u`, `/da`, `/os`) |
+| Como verificar o roteamento | Comparar `findCommandImport` antes/depois com `npm run build` + o script `node -e` do `/new-command`, em vez de teste Jest | O roteamento lê os `.js` compilados em `dist/commands/`; os testes Jest rodam sobre `src/` e não têm esse diretório | n |
 | Fora de grupo | Mostra só os de membro | `checkPermission` nega admin/owner fora de grupo; reaproveitamos a mesma regra | n |
 | Falha ao ler metadados do grupo | Erro propaga para o `dynamicCommand`, que responde com a mensagem genérica | Mesmo comportamento dos comandos de admin hoje | n |
 | Ordem dos comandos dentro da seção | Ordem de carregamento (alfabética por arquivo) | Determinística e sem regra extra | n |
@@ -78,13 +80,13 @@ Quem está no grupo não tem como descobrir pelo WhatsApp quais comandos o bot a
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| CMDS-01 | P1: AC 1 (aliases + cabeçalho) | Execute | Implementing |
-| CMDS-02 | P1: AC 2-3 (formato da linha) | Execute | Implementing |
-| CMDS-03 | P1: AC 4-5 (seções e ordem) | Execute | Implementing |
-| CMDS-04 | P1: AC 6-7 (admins) | Execute | Implementing |
-| CMDS-05 | P1: AC 8-9 (dono) | Execute | Implementing |
-| CMDS-06 | P1: AC 10-11 (fora de grupo / mesma regra) | Execute | Implementing |
-| CMDS-07 | Edge cases (usage multilinha, seção vazia, erro) | Execute | Implementing |
+| CMDS-01 | P1: AC 1 (aliases + cabeçalho) | Execute | Verified |
+| CMDS-02 | P1: AC 2-3 (formato da linha) | Execute | Verified |
+| CMDS-03 | P1: AC 4-5 (seções e ordem) | Execute | Verified |
+| CMDS-04 | P1: AC 6-7 (admins) | Execute | Verified |
+| CMDS-05 | P1: AC 8-9 (dono) | Execute | Verified |
+| CMDS-06 | P1: AC 10-11 (fora de grupo / mesma regra) | Execute | Verified |
+| CMDS-07 | Edge cases (usage multilinha, seção vazia, erro) | Execute | Verified |
 
 **Coverage:** 7 total, 7 mapped, 0 unmapped
 

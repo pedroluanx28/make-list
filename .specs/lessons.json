@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 2,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "ac_gap::when adding command aliases enumerate every short input whose findcommandimport destination changes and either register it in the spec or pin it with a routing test",
+      "text": "When adding command aliases, enumerate every short input whose findCommandImport destination changes and either register it in the spec or pin it with a routing test",
+      "signal": "ac_gap",
+      "scope": "command-aliases",
+      "status": "candidate",
+      "features": [
+        "comandos"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "validation.md Success Criteria 2; src/utils/index.ts:142 (command-aliases)"
+      ],
+      "created": "2026-10-23T23:19:19Z",
+      "last_seen": "2026-10-23T23:19:19Z"
+    }
+  ]
+}
