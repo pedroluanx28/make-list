@@ -18,9 +18,10 @@ Você revisa mudanças em comandos deste bot de WhatsApp (TypeScript + Baileys).
 - Exporta um único objeto `Command` com `name`, `description`, `commands`, `usage` e `handle`?
 
 **Colisão de aliases** (a armadilha mais comum)
-- O match é `formatCommand(alias).includes(formatCommand(input))`: minúsculas, sem acentos, só alfanuméricos; o primeiro arquivo vence e `admin/` vem antes de `member/`.
-- Liste todos os aliases com `grep -rhn "commands:" src/commands` e, para cada alias novo, verifique se ele contém ou está contido em algum existente. Exemplo de problema: o alias `pedido-encerrar` vira `pedidoencerrar`, que contém `pedido`.
-- Diga explicitamente quais inputs passariam a cair em outro comando.
+- O `findCommandImport` (`src/utils/index.ts`) normaliza com `formatCommand` (minúsculas, sem acentos, só alfanuméricos) e faz três passadas: alias exato, depois `startsWith`, depois `includes`; em cada passada, `member` vem antes de `admin` e de `owner`. Confira o código atual, pois essa regra pode mudar.
+- Liste todos os aliases com `grep -rhn "commands:" src/commands`. Rode `npm run build` e verifique os inputs curtos e genéricos de verdade com
+  `node -e 'const {findCommandImport}=require("./dist/utils");for(const i of process.argv.slice(1))console.log(i,"→",findCommandImport(i).command?.name??"nenhum")' <inputs>`. Compare com `main` (`git stash` ou outro worktree) se precisar saber o que mudou.
+- Diga explicitamente quais inputs passariam a cair em outro comando. Exemplo real: `/encerrar` cai em `pedido-encerrar` por substring.
 
 **Comportamento**
 - Entradas inválidas lançam `InvalidParameterError`/`WarningError`/`DangerError` em vez de respostas `❌` escritas à mão?

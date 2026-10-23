@@ -12,15 +12,19 @@ Cria um comando completo, pronto para PR. Argumentos: `$ARGUMENTS`
 
 - Se faltar o nome, a permissão (`member`, `admin`, `owner`) ou o comportamento, pergunte antes de criar arquivos.
 - Leia `src/commands/_sample.ts`, um comando parecido já existente na mesma pasta de permissão e o teste dele.
-- **Colisão de aliases:** o match é `formatCommand(alias).includes(formatCommand(input))` e o primeiro arquivo vence (`admin/` antes de `member/`). Liste os aliases existentes com
-  `grep -rhn "commands:" src/commands` e confirme que:
-  - nenhum alias novo é substring de um alias existente, nem o contrário;
-  - o comando novo não "rouba" comandos antigos.
-  Se houver conflito, proponha outro alias ao usuário.
+- **Colisão de aliases:** o `findCommandImport` (`src/utils/index.ts`) normaliza com `formatCommand` e faz três passadas: alias exato, depois alias que começa com o input, depois alias que contém o input; em cada passada, `member` vem antes de `admin` e de `owner`, e dentro da pasta os arquivos são testados em ordem alfabética (o primeiro que casar vence). Liste os aliases existentes com
+  `grep -rn -A2 "commands:" src/commands --exclude=_sample.ts` e confirme que:
+  - nenhum alias novo é idêntico (após normalizar) a um existente;
+  - o comando novo não "rouba" inputs curtos que hoje vão para outro comando (ex.: um alias novo começando com `p` pode competir com `ping`/`pedido` no input `/p`);
+  - aliases de uma letra ou genéricos (`d`, `encerrar`) são evitados.
+  Para conferir de verdade, rode `npm run build` e teste os inputs com
+  `node -e 'const {findCommandImport}=require("./dist/utils");for(const i of process.argv.slice(1))console.log(i,"→",findCommandImport(i).command?.name??"nenhum")' p pe d enc`.
+  Rode o mesmo comando antes e depois de criar o arquivo e compare. Se houver conflito, proponha outro alias ao usuário.
+- Se você estiver rodando como subagente e não puder perguntar, escolha a opção mais conservadora (menos aliases, nenhum alias genérico) e liste as decisões no relatório final.
 
 ## 2. Comando — `src/commands/<permissao>/<nomeCamelCase>.ts`
 
-- Exporte um único objeto `Command` (tipo global, sem import) com `name`, `description`, `commands`, `usage` (usando `PREFIX` de `src/config`) e `handle`.
+- Exporte um único objeto anotado como `export const nome: Command = { ... }` (tipo global, sem import) com `name`, `description`, `commands`, `usage` (usando `PREFIX` de `src/config`) e `handle`.
 - Use os helpers de `CommonFunctions` (`sendReply`, `sendSuccessReply`, `getGroupParticipants`...). Eles já prefixam `BOT_EMOJI`.
 - Para entrada inválida, lance `InvalidParameterError`; para avisos, `WarningError`; para falhas, `DangerError` (de `src/errors`).
 - Textos para o usuário em pt-BR.
@@ -31,9 +35,9 @@ Cria um comando completo, pronto para PR. Argumentos: `$ARGUMENTS`
 - Monte os parâmetros com `createMockCommonFunctions({ ... })` de `tests/mocks/commonFunctions.ts`.
 - Cubra: metadata (`name`, `commands`, `usage`), caminho feliz, cada validação/erro e cada branch.
 - Se o código importar algo que dependa de `@whiskeysockets/baileys`, faça `jest.mock` dele (ver `tests/commands/member/pedido.test.ts`).
-- Se gravar em `assets/`, mocke `fs` com um `Map` em memória (ver `tests/commands/admin/cardapio.test.ts`). Timers: `jest.useFakeTimers({ now })`.
+- Se gravar em `assets/`, mocke `fs` com um `Map` em memória (ver `tests/commands/admin/cardapio.test.ts`). Timers: `jest.useFakeTimers({ now })`. Aleatoriedade: `jest.spyOn(Math, 'random').mockReturnValue(...)`.
 - Confirme 100% de cobertura do arquivo:
-  `npx jest --coverage --collectCoverageFrom='src/commands/<permissao>/<nome>.ts' tests/commands/<permissao>/<nome>.test.ts`
+  `npx jest --coverage --collectCoverageFrom='src/commands/<permissao>/<nomeCamelCase>.ts' tests/commands/<permissao>/<nomeCamelCase>.test.ts`
 
 ## 4. Documentação
 

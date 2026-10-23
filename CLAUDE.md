@@ -27,9 +27,9 @@ On first run the bot asks for a phone number in the terminal and prints a pairin
 
 **Command discovery is runtime, filesystem-based, and reads compiled JS.** `readCommandImports()` in `utils/index.ts` scans each subdirectory of `COMMANDS_DIR` (`dist/commands/`) and `require`s every `.js` file not starting with `_`. Consequences:
 - Changes to commands only take effect after `tsc`; deleted `.ts` files can leave stale `.js` in `dist/` that still load (use `dev:force`).
-- The **subdirectory name is the permission level**: `member`, `admin`, or `owner` (checked in `middlewares/checkPermission.ts` against group metadata). `admin/` sorts before `member/`, so its aliases are matched first. `checkPermission` denies admin/owner commands outside groups.
+- The **subdirectory name is the permission level**: `member`, `admin`, or `owner` (checked in `middlewares/checkPermission.ts` against group metadata). `checkPermission` denies admin/owner commands outside groups.
 - Each command file exports a named object of type `Command` (`name`, `description`, `commands` aliases, `usage`, `handle`). The export name is irrelevant; the first export of the module is used. Template: `src/commands/_sample.ts`.
-- Alias matching uses `formatCommand(alias).includes(formatCommand(input))` (lowercased, accents stripped, alphanumerics only), so a short input can match a longer alias — first match across files wins.
+- Alias matching (`findCommandImport` in `utils/index.ts`) normalizes with `formatCommand` (lowercased, accents stripped, alphanumerics only) and runs three passes over all commands: exact alias, then alias `startsWith` input, then alias `includes` input. Within each pass, `member` commands are tried before `admin` before `owner`, and within a folder files are tried in alphabetical order (first match wins), so a fuzzy input never lands on an admin command when a member one matches. Short inputs still fuzzy-match (e.g. `/p` → `pedido`, `/encerrar` → `pedido-encerrar`), so new aliases can hijack inputs that previously matched nothing or another command.
 
 **Command handlers** receive a `CommonFunctions` object (built in `loadCommonFunctions.ts`): parsed message data (`args` are split on `\`, `|`, `/`; `fullArgs` is the raw remainder) plus helpers like `sendReply`, `sendText`, `send{Success,Error,Warning}Reply`, `getGroupParticipants`. Text helpers prefix `BOT_EMOJI` automatically.
 
@@ -58,7 +58,7 @@ Tests live in `tests/` mirroring `src/` (commands, middlewares, utils), are writ
 
 ## Definition of Done (new or changed command)
 
-1. Command file in `src/commands/<member|admin|owner>/`, based on `_sample.ts`; check aliases don't collide with existing ones via the `includes` matching rule above.
+1. Command file in `src/commands/<member|admin|owner>/`, based on `_sample.ts`; check aliases don't collide with existing ones under the three-pass matching rule above.
 2. Tests in the mirrored `tests/` path, 100% coverage for the command file (`npx jest --coverage <test file>`).
 3. Doc page `docs/<commandName>.md` following `docs/_template.md`.
 4. Entry in `docs/README.md` and in the commands table of the root `README.md`.
