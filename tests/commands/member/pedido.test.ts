@@ -11,6 +11,7 @@ jest.mock('fs');
 import { decryptPollVote } from '@whiskeysockets/baileys';
 import { pedido } from '../../../src/commands/member/pedido';
 import { pedidoEncerrar } from '../../../src/commands/member/pedidoEncerrar';
+import { WarningError } from '../../../src/errors';
 import { createMockCommonFunctions } from '../../mocks/commonFunctions';
 import { DEFAULT_MENU_ITEMS } from '../../../src/utils/menuManager';
 import {
@@ -48,6 +49,7 @@ function createMockSocket(pollId: string | null = 'poll123') {
 function createFakeOrder(overrides: Partial<ActiveOrder> = {}): ActiveOrder {
     const order: ActiveOrder = {
         chatId: 'test@g.us',
+        creatorJid: 'user@s.whatsapp.net',
         pollMessageId: 'p1',
         pollEncKey: POLL_SECRET,
         pollCreatorJids: [BOT_JID],
@@ -366,6 +368,27 @@ describe('pedidoEncerrar command', () => {
         // socket.sendMessage called for: poll creation + two result messages
         expect(mockSocket.sendMessage).toHaveBeenCalledTimes(3);
     });
+
+    it('should store who opened the order', async () => {
+        const mockSocket = createMockSocket('pollCreator');
+        await pedido.handle(createMockCommonFunctions({ fullArgs: '10', socket: mockSocket }));
+
+        expect(getOrder('test@g.us')?.creatorJid).toBe('user@s.whatsapp.net');
+    });
+
+    it('should not let someone other than the creator close the order', async () => {
+        const mockSocket = createMockSocket('pollOther');
+        await pedido.handle(createMockCommonFunctions({ fullArgs: '10', socket: mockSocket }));
+
+        const otherMock = createMockCommonFunctions({ socket: mockSocket, userJid: 'other@s.whatsapp.net' });
+
+        await expect(pedidoEncerrar.handle(otherMock)).rejects.toThrow(WarningError);
+        await expect(pedidoEncerrar.handle(otherMock)).rejects.toThrow('Somente quem abriu o pedido');
+        expect(otherMock.sendReply).not.toHaveBeenCalled();
+        expect(getOrder('test@g.us')).toBeDefined();
+        // Only the poll was sent; no results
+        expect(mockSocket.sendMessage).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe('pedidoManager', () => {
@@ -413,7 +436,7 @@ describe('pedidoManager', () => {
 
     describe('recordVote', () => {
         beforeEach(() => {
-            createOrder('chat@g.us', 'poll99', POLL_SECRET, [BOT_JID, BOT_LID], DEFAULT_MENU_ITEMS, 60000, jest.fn());
+            createOrder('chat@g.us', 'user@s.whatsapp.net', 'poll99', POLL_SECRET, [BOT_JID, BOT_LID], DEFAULT_MENU_ITEMS, 60000, jest.fn());
         });
 
         afterEach(() => {
