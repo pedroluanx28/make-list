@@ -24,6 +24,8 @@ import {
   potTotal,
   saveTable,
   startHand,
+  timeBankLeft,
+  useTimeBank,
   withTableLock,
 } from '../../src/utils/pokerManager';
 
@@ -652,6 +654,39 @@ describe('pokerManager', () => {
 
       expect(summary.map((player) => player.chips)).toEqual([100, 100, 100]);
       expect(table.hand).toBeNull();
+    });
+  });
+
+  describe('time bank', () => {
+    it('should give each player 3 extensions when they join', () => {
+      const table = setupTable([100, 100]);
+
+      expect(table.players.map(timeBankLeft)).toEqual([3, 3]);
+    });
+
+    it('should spend one extension at a time and report none left after the third', () => {
+      const table = setupTable([100, 100]);
+
+      expect([useTimeBank(table, jid(0)), useTimeBank(table, jid(0)), useTimeBank(table, jid(0))]).toEqual([2, 1, 0]);
+      expect(useTimeBank(table, jid(0))).toBeNull();
+      expect(timeBankLeft(table.players[1])).toBe(3);
+    });
+
+    it('should not refill the extensions on the next hand', () => {
+      const table = setupTable([100, 100]);
+      useTimeBank(table, jid(0));
+
+      startHand(table, fillerDeal(2));
+
+      expect(timeBankLeft(table.players[0])).toBe(2);
+    });
+
+    it('should count 3 extensions for a player saved before the time bank existed', () => {
+      const table = setupTable([100, 100]);
+      delete table.players[0].timeBank;
+
+      expect(timeBankLeft(table.players[0])).toBe(3);
+      expect(useTimeBank(table, jid(0))).toBe(2);
     });
   });
 

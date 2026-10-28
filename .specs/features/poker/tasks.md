@@ -76,7 +76,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 
 **Approved** (alteração POKER-16..18): 2026-10-28 - user: "reseta sempre que mudar a vez / pode começar"
 
-### T10: Time bank no motor [ ]
+### T10: Time bank no motor [x]
 **What**: campo `timeBank` (3 extensões) no jogador e `useTimeBank(table, jid)`.
 **Where**: `src/utils/pokerManager.ts` · **Depends on**: None · **Requirement**: POKER-17 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona time bank de 3 extensões por jogador`

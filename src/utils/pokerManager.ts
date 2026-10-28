@@ -10,6 +10,7 @@ export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 10;
 export const MIN_BUY_IN_MULTIPLIER = 10;
 export const MAX_BUY_IN_MULTIPLIER = 200;
+export const TIME_BANK_EXTENSIONS = 3;
 const MAX_NAME_LENGTH = 20;
 const BOARD_SIZE = 5;
 
@@ -30,6 +31,7 @@ export type PokerPlayer = {
     allIn: boolean;
     acted: boolean; // acted since the last full raise
     mayRaise: boolean; // false after an all-in below the minimum raise: only call or fold
+    timeBank?: number; // extensions left for the whole table; missing on tables saved before it existed
 };
 
 export type PokerHand = {
@@ -206,10 +208,25 @@ export const addPlayer = (table: PokerTable, jid: string, name: string, buyIn: n
         allIn: false,
         acted: false,
         mayRaise: true,
+        timeBank: TIME_BANK_EXTENSIONS,
     };
 
     table.players.push(player);
     return player;
+};
+
+export const timeBankLeft = (player: PokerPlayer) => player.timeBank ?? TIME_BANK_EXTENSIONS;
+
+// Spends one extension of the player; returns how many are left, or null when there were none
+export const useTimeBank = (table: PokerTable, jid: string): number | null => {
+    const player = table.players.find((seated) => seated.jid === jid)!;
+    const left = timeBankLeft(player);
+    if (left === 0) {
+        return null;
+    }
+
+    player.timeBank = left - 1;
+    return player.timeBank;
 };
 
 export const playersWithChips = (table: PokerTable) => table.players.filter((player) => player.chips > 0);
