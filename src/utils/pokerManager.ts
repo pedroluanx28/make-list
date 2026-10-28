@@ -8,6 +8,7 @@ import { compareScores, evaluateHand } from "./pokerHand";
 export const DEFAULT_MINIMUM = 10;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 10;
+export const MAX_BUY_IN_MULTIPLIER = 200;
 const MAX_NAME_LENGTH = 20;
 const BOARD_SIZE = 5;
 
@@ -155,6 +156,8 @@ export const createTable = (chatId: string, minimum: number = DEFAULT_MINIMUM): 
     };
 };
 
+export const maxBuyIn = (table: PokerTable) => table.minimum * MAX_BUY_IN_MULTIPLIER;
+
 export const addPlayer = (table: PokerTable, jid: string, name: string, buyIn: number): PokerPlayer => {
     if (table.started) {
         throw new WarningError("A mesa já começou; não dá para entrar agora.");
@@ -178,6 +181,12 @@ export const addPlayer = (table: PokerTable, jid: string, name: string, buyIn: n
 
     if (buyIn < table.minimum) {
         throw new InvalidParameterError(`o buy-in precisa ser de pelo menos ${formatPrice(table.minimum)} (o mínimo da mesa).`);
+    }
+
+    if (buyIn > maxBuyIn(table)) {
+        throw new InvalidParameterError(
+            `o buy-in máximo é ${formatPrice(maxBuyIn(table))} (${MAX_BUY_IN_MULTIPLIER} vezes o mínimo da mesa).`
+        );
     }
 
     const player: PokerPlayer = {

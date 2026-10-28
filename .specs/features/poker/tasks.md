@@ -64,7 +64,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerManager.ts`, `src/commands/member/poker.ts` · **Requirement**: POKER-13 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): mostra todas as cartas da mesa no turn e no river`
 
-### T8: Buy-in máximo de 200 vezes o mínimo [ ]
+### T8: Buy-in máximo de 200 vezes o mínimo [x]
 **Where**: `src/utils/pokerManager.ts`, `src/commands/member/poker.ts` · **Requirement**: POKER-14 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): limita o buy-in a 200 vezes o mínimo da mesa`
 

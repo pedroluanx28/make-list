@@ -107,6 +107,7 @@ describe('poker command', () => {
       const reply = (mock.sendReply as jest.Mock).mock.calls[0][0];
       expect(reply).toContain('Mesa de poker aberta!');
       expect(reply).toContain('Blinds: small R$ 0,05 · big R$ 0,10');
+      expect(reply).toContain('Buy-in: de R$ 0,10 a R$ 20,00');
       expect(getTable(GROUP)!.minimum).toBe(10);
     });
 
@@ -143,10 +144,10 @@ describe('poker command', () => {
       await run('abrir');
       await run('entrar Ana 10', 0);
 
-      const mock = await run('entrar Bia 50', 1);
+      const mock = await run('entrar Bia 20', 1);
 
       const reply = (mock.sendReply as jest.Mock).mock.calls[0][0];
-      expect(reply).toBe('✅ Bia entrou na mesa com R$ 50,00.\n\n*Jogadores:*\n1. Ana (R$ 10,00)\n2. Bia (R$ 50,00)');
+      expect(reply).toBe('✅ Bia entrou na mesa com R$ 20,00.\n\n*Jogadores:*\n1. Ana (R$ 10,00)\n2. Bia (R$ 20,00)');
       expect(getTable(GROUP)!.players.map((player) => player.jid)).toEqual([jid(0), jid(1)]);
     });
   });

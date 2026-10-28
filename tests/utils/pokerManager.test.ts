@@ -181,6 +181,22 @@ describe('pokerManager', () => {
       expect(() => addPlayer(table, jid(1), 'P0', 100)).toThrow(WarningError);
     });
 
+    it('should accept a buy-in of exactly 200 times the table minimum', () => {
+      const table = setupTable([]);
+
+      addPlayer(table, jid(0), 'p0', 2000);
+
+      expect(table.players[0].chips).toBe(2000);
+    });
+
+    it('should refuse a buy-in above 200 times the table minimum', () => {
+      const table = setupTable([]);
+
+      expect(() => addPlayer(table, jid(0), 'p0', 2001)).toThrow(
+        'o buy-in máximo é R$ 20,00 (200 vezes o mínimo da mesa).'
+      );
+    });
+
     it('should refuse a buy-in below the table minimum', () => {
       const table = setupTable([]);
 
