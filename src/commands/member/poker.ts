@@ -136,7 +136,7 @@ const describeEvents = (table: PokerTable, events: PokerEvent[]) => {
                 break;
             }
             case "street":
-                lines.push("", `🃏 *${STREET_NAMES[event.street]}:* ${formatCards(event.cards)}`);
+                lines.push("", `🃏 *${STREET_NAMES[event.street]}:* ${formatCards(event.board)}`);
                 break;
             case "foldWin":
                 lines.push("", `🏆 ${tag(event.jid)} levou o pote de ${formatPrice(event.amount)}.`);

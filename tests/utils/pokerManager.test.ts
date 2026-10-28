@@ -434,7 +434,7 @@ describe('pokerManager', () => {
 
       const events = act(table, 2, 'check');
 
-      expect(events).toContainEqual({ type: 'street', street: 'flop', cards: cards.slice(6, 9) });
+      expect(events).toContainEqual({ type: 'street', street: 'flop', cards: cards.slice(6, 9), board: cards.slice(6, 9) });
       expect(turnOf(events)).toBe(jid(1));
       expect(table.hand!.currentBet).toBe(0);
       expect(table.players.every((player) => player.bet === 0)).toBe(true);
@@ -459,11 +459,11 @@ describe('pokerManager', () => {
       act(table, 1, 'check');
 
       const turn = act(table, 0, 'check');
-      expect(turn).toContainEqual({ type: 'street', street: 'turn', cards: [cards[7]] });
+      expect(turn).toContainEqual({ type: 'street', street: 'turn', cards: [cards[7]], board: cards.slice(4, 8) });
 
       act(table, 1, 'check');
       const river = act(table, 0, 'check');
-      expect(river).toContainEqual({ type: 'street', street: 'river', cards: [cards[8]] });
+      expect(river).toContainEqual({ type: 'street', street: 'river', cards: [cards[8]], board: cards.slice(4, 9) });
       expect(table.hand!.board).toEqual(cards.slice(4, 9));
     });
 

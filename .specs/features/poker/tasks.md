@@ -60,7 +60,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `docs/poker.md`, `docs/README.md`, `README.md` · **Requirement**: DoD · **Tests**: none · **Gate**: build
 **Commit**: `docs(poker): documenta o comando .poker`
 
-### T7: Mesa completa no turn e no river [ ]
+### T7: Mesa completa no turn e no river [x]
 **Where**: `src/utils/pokerManager.ts`, `src/commands/member/poker.ts` · **Requirement**: POKER-13 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): mostra todas as cartas da mesa no turn e no river`
 

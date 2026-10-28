@@ -56,7 +56,7 @@ export type PotResult = { amount: number; winners: string[] };
 export type PokerEvent =
     | { type: "blinds"; smallBlind: string; bigBlind: string }
     | { type: "action"; jid: string; action: PokerAction; total: number; allIn: boolean }
-    | { type: "street"; street: Street; cards: string[] }
+    | { type: "street"; street: Street; cards: string[]; board: string[] }
     | { type: "turn"; jid: string }
     | { type: "foldWin"; jid: string; amount: number }
     | { type: "showdown"; hands: ShowdownHand[]; pots: PotResult[] };
@@ -445,7 +445,7 @@ const proceed = (table: PokerTable): PokerEvent[] => {
 
         const cards = hand.deck.splice(0, STREET_CARDS[hand.street]);
         hand.board.push(...cards);
-        events.push({ type: "street", street: hand.street, cards });
+        events.push({ type: "street", street: hand.street, cards, board: [...hand.board] });
 
         // After the flop the first to act is the first active player left of the button
         hand.current = table.dealer;
