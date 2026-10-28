@@ -13,10 +13,10 @@
 ## Handoff
 
 - **Feature**: poker (`.specs/features/poker/`)
-- **Phase / Task**: Specify concluído em conteúdo; falta adaptar o spec ao formato completo da skill, depois Design e Tasks
-- **Completed**: spec.md (aprovado pelo user), context.md
-- **In-progress** (file:line): nenhum código escrito
-- **Next step**: ler `.specs/features/poker/handoff.md` inteiro e seguir a seção "Próximos passos"
-- **Blockers**: scripts Python da skill precisam de permissão do user para rodar (auto mode bloqueou)
-- **Uncommitted files**: `.specs/STATE.md`, `.specs/features/poker/spec.md`, `.specs/features/poker/context.md`, `.specs/features/poker/handoff.md`
+- **Phase / Task**: Execute concluído (T1-T6 commitadas); falta a verificação final da skill
+- **Completed**: T1, T2, T3, T4, T5, T6
+- **In-progress** (file:line): nenhum
+- **Next step**: rodar `check_proofs.py` + Verifier independente (precisa de permissão para os scripts e para disparar o sub-agente), depois testar uma mesa real num grupo
+- **Blockers**: scripts Python da skill bloqueados pelo auto mode; o bot caiu com rejeição não tratada da Baileys (ver handoff.md)
+- **Uncommitted files**: nenhum
 - **Branch**: feat/poker
