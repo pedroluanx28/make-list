@@ -48,7 +48,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerHand.ts` · **Requirement**: POKER-07 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): avalia e compara mãos de Texas Hold'em`
 
-### T4: Motor da mesa e persistência [ ]
+### T4: Motor da mesa e persistência [x]
 **Where**: `src/utils/pokerManager.ts` · **Requirement**: POKER-01, 02, 04, 05, 06, 07, 08, 09, 12 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona motor da mesa com side pots e persistência`
 
