@@ -68,7 +68,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerManager.ts`, `src/commands/member/poker.ts` · **Requirement**: POKER-14 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): limita o buy-in a 200 vezes o mínimo da mesa`
 
-### T9: Comando `.poker saldo` [ ]
+### T9: Comando `.poker saldo` [x]
 **Where**: `src/commands/member/poker.ts`, `docs/poker.md` · **Requirement**: POKER-15 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona o subcomando saldo`
 

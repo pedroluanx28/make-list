@@ -35,6 +35,7 @@ const HELP = [
     `${POKER} abrir [mínimo] → abre uma mesa (o mínimo é o big blind; padrão ${formatPrice(DEFAULT_MINIMUM)})`,
     `${POKER} entrar <nome> <buy-in> → entra na mesa (nome sem espaços; buy-in de 1 a 200 vezes o mínimo)`,
     `${POKER} iniciar → distribui as cartas e começa a mão`,
+    `${POKER} saldo → mostra as suas fichas e o seu saldo na mesa`,
     `${POKER} acabar → encerra a mesa e mostra o resumo`,
     `${POKER} ajuda → mostra esta ajuda`,
     "",
@@ -285,6 +286,25 @@ const join = async ({ remoteJid, userJid, sendReply }: CommonFunctions, args: st
     );
 };
 
+// Chips already in the pot are not lost until the hand ends, so they count in the balance
+const balance = async ({ remoteJid, userJid, sendReply }: CommonFunctions) => {
+    const table = requireTable(remoteJid);
+    const player = table.players.find((seated) => seated.jid === userJid);
+    if (!player) {
+        throw new WarningError("Você não está na mesa.");
+    }
+
+    await sendReply(
+        [
+            `💰 *Saldo de ${player.name}*`,
+            `Fichas: ${formatPrice(player.chips)}`,
+            ...(player.committed > 0 ? [`No pote nesta mão: ${formatPrice(player.committed)}`] : []),
+            `Buy-in: ${formatPrice(player.buyIn)}`,
+            `Saldo: ${signedPrice(player.chips + player.committed - player.buyIn)}`,
+        ].join("\n")
+    );
+};
+
 const start = async ({ socket, remoteJid, userJid }: CommonFunctions) => {
     const table = requireTable(remoteJid);
     await requireManager(socket, table, userJid, "iniciar a mesa");
@@ -331,6 +351,7 @@ export const poker: Command = {
         `${POKER} entrar <nome> <buy-in>`,
         `${POKER} iniciar`,
         `${POKER} check | call | raise [valor] | fold | allin`,
+        `${POKER} saldo`,
         `${POKER} acabar`,
     ].join("\n"),
     handle: async (params) => {
@@ -351,6 +372,7 @@ export const poker: Command = {
             if (action === "entrar") return join(params, args);
             if (action === "iniciar") return start(params);
             if (action === "acabar") return end(params);
+            if (action === "saldo") return balance(params);
             if (ACTIONS.includes(action as PokerAction)) return play(params, action as PokerAction, args);
 
             throw new WarningError(`Subcomando "${subcommand}" não existe. Use ${POKER} ajuda.`);

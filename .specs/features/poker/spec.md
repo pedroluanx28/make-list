@@ -51,7 +51,7 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Baralho | Deck of Cards API (`deckofcardsapi.com`): um baralho novo embaralhado por mão, e todas as cartas da mão (2 por jogador + 5 da mesa) são compradas numa única chamada no início e guardadas no arquivo | Decisão do usuário (usar a API); comprar tudo de uma vez reduz chamadas de rede e falhas no meio da mão | n |
 | Cartas no privado | Uma imagem por carta (`https://deckofcardsapi.com/static/img/<code>.png`), seguida de uma mensagem de texto `[10♥️] [6♥️]`; se o envio da imagem falhar, manda só o texto | Decisão do usuário: imagem se possível, texto como alternativa. O Baileys envia imagem por URL | n |
 | Cartas da mesa (flop, turn, river) | Mensagem de texto no grupo, no formato `[A♠️] [K♦️] [7♣️]`, sempre com todas as cartas da mesa (turn mostra 4, river mostra 5) | Decisão do usuário ("deixar todas as cartas visíveis nas próximas mensagens") | y |
-| `.poker saldo` | Responde só a quem digitou: fichas atuais, buy-in, saldo (fichas − buy-in) e, durante uma mão, quanto já está no pote | Pedido do usuário ("mostrar o saldo atual do jogador que digitou"); as fichas no pote ainda não são ganho nem perda | n |
+| `.poker saldo` | Responde só a quem digitou: fichas atuais, buy-in, saldo (fichas + o que está no pote nesta mão − buy-in) e, durante uma mão, quanto já está no pote | Pedido do usuário ("mostrar o saldo atual do jogador que digitou"); as fichas no pote ainda não são ganho nem perda | n |
 | Avaliação das mãos | Melhor combinação de 5 entre as 7 cartas; empate divide o pote; centavo que sobrar vai para o primeiro vencedor à esquerda do botão | Regra oficial | n |
 | Próxima mão | Começa automaticamente depois do showdown, com o botão no próximo jogador que ainda tem fichas | Decisão do usuário (mesa só acaba quando sobra 1 com fichas) | n |
 | Jogador sem fichas | Eliminado: não recebe cartas nas mãos seguintes, mas aparece no resumo final | Necessário para "sobrar 1 jogador com fichas" | n |
@@ -143,7 +143,7 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 3. IF o buy-in de `.poker entrar` é maior que 200 vezes o mínimo da mesa THEN o bot SHALL recusar com `InvalidParameterError` informando o máximo.
 4. WHEN a mesa é aberta THEN o bot SHALL informar o buy-in mínimo e máximo.
 5. WHEN um jogador sentado envia `.poker saldo` THEN o bot SHALL responder (reply) com o nome, as fichas atuais, o buy-in e o saldo (fichas − buy-in).
-6. WHILE uma mão está em andamento, WHEN um jogador da mão envia `.poker saldo` the bot SHALL incluir quanto ele já colocou no pote nesta mão.
+6. WHILE uma mão está em andamento, WHEN um jogador que já colocou fichas no pote envia `.poker saldo` the bot SHALL mostrar esse valor separado e somá-lo às fichas no cálculo do saldo.
 7. IF quem envia `.poker saldo` não está na mesa THEN o bot SHALL recusar com aviso.
 
 ### P2: Ajuda

@@ -76,6 +76,7 @@ describe('poker command', () => {
       expect(reply).toContain('🃏 *Poker (Texas Hold\'em)*');
       expect(reply).toContain('.poker abrir [mínimo]');
       expect(reply).toContain('.poker check → passar a vez sem apostar');
+      expect(reply).toContain('.poker saldo → mostra as suas fichas e o seu saldo na mesa');
       expect(reply).toContain('.poker allin → apostar todas as suas fichas');
     });
 
@@ -418,6 +419,42 @@ describe('poker command', () => {
       expect(texts[texts.length - 2]).toContain('*Showdown!*');
       expect(texts[texts.length - 1]).toContain('🏆 p1 ficou com todas as fichas!');
       expect(getTable(GROUP)).toBeNull();
+    });
+  });
+
+  describe('saldo', () => {
+    it('should refuse when there is no table', async () => {
+      await expect(run('saldo')).rejects.toThrow(WarningError);
+    });
+
+    it('should refuse someone who is not at the table', async () => {
+      seatPlayers([100, 100]);
+
+      await expect(run('saldo', 9)).rejects.toThrow('Você não está na mesa.');
+    });
+
+    it('should reply with the chips, buy-in and balance of who asked', async () => {
+      const table = seatPlayers([100, 200]);
+      table.players[1].chips = 260;
+      saveTable(table);
+
+      const mock = await run('saldo', 1);
+
+      expect((mock.sendReply as jest.Mock).mock.calls[0][0]).toBe(
+        '💰 *Saldo de p1*\nFichas: R$ 2,60\nBuy-in: R$ 2,00\nSaldo: +R$ 0,60'
+      );
+    });
+
+    it('should show what is in the pot and count it in the balance during a hand', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      await run('raise 0,40', 0);
+
+      const mock = await run('saldo', 0);
+
+      expect((mock.sendReply as jest.Mock).mock.calls[0][0]).toBe(
+        '💰 *Saldo de p0*\nFichas: R$ 0,60\nNo pote nesta mão: R$ 0,40\nBuy-in: R$ 1,00\nSaldo: +R$ 0,00'
+      );
     });
   });
 
