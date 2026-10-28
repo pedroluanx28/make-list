@@ -40,7 +40,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/config.ts`, `src/middlewares/index.ts`, `src/utils/index.ts` · **Requirement**: POKER-11 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(prefixo): aceita "." além de "/" nos comandos`
 
-### T2: Cliente da Deck of Cards API e formatação das cartas [ ]
+### T2: Cliente da Deck of Cards API e formatação das cartas [x]
 **Where**: `src/utils/deckOfCards.ts`, `src/utils/pokerHand.ts` (formatação) · **Requirement**: POKER-03 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona cliente da Deck of Cards API`
 
