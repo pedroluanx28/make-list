@@ -72,6 +72,49 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/commands/member/poker.ts`, `docs/poker.md` · **Requirement**: POKER-15 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona o subcomando saldo`
 
+## Alteração POKER-16..18
+
+**Approved** (alteração POKER-16..18): 2026-10-28 - user: "reseta sempre que mudar a vez / pode começar"
+
+### T10: Time bank no motor [ ]
+**What**: campo `timeBank` (3 extensões) no jogador e `useTimeBank(table, jid)`.
+**Where**: `src/utils/pokerManager.ts` · **Depends on**: None · **Requirement**: POKER-17 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(poker): adiciona time bank de 3 extensões por jogador`
+
+### T11: Saída da mesa no motor [ ]
+**What**: `leaveTable` (antes do início remove; na mão dá fold; marca `left`), quem saiu fora das próximas mãos e marcado no resumo.
+**Where**: `src/utils/pokerManager.ts` · **Depends on**: T10 · **Requirement**: POKER-18 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(poker): permite sair da mesa no motor`
+
+### T12: Socket ativo compartilhado [ ]
+**What**: `setActiveSocket`/`getActiveSocket`, registrado pelo loader a cada socket.
+**Where**: `src/utils/activeSocket.ts` · **Depends on**: None · **Requirement**: POKER-16 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(conexao): guarda o socket ativo para tarefas agendadas`
+
+### T13: Relógio da vez [ ]
+**What**: `startClock`/`stopClock` com aviso aos 10 s restantes e fim do tempo.
+**Where**: `src/utils/pokerClock.ts` · **Depends on**: None · **Requirement**: POKER-16 · **Tests**: unit (fake timers) · **Gate**: build
+**Commit**: `feat(poker): adiciona o relógio da vez`
+
+### T14: Tempo limite no comando [ ]
+**What**: linha do relógio na vez, liga/desliga o relógio, extensão ou fold por tempo, retomada após reinício.
+**Where**: `src/commands/member/poker.ts`, `src/index.ts` · **Depends on**: T10, T12, T13 · **Requirement**: POKER-16, POKER-17 · **Tests**: unit (fake timers) · **Gate**: build
+**Commit**: `feat(poker): aplica tempo limite e time bank na vez de cada jogador`
+
+### T15: Subcomando `.poker sair` [ ]
+**What**: `sair` com resultado do jogador, vez passada adiante e encerramento quando sobra menos de 2.
+**Where**: `src/commands/member/poker.ts` · **Depends on**: T11, T14 · **Requirement**: POKER-18 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(poker): adiciona o subcomando sair`
+
+### T16: Documentação [ ]
+**What**: ajuda do comando e `docs/poker.md` com tempo limite, time bank e `sair`.
+**Where**: `docs/poker.md` · **Depends on**: T15 · **Requirement**: DoD · **Tests**: none · **Gate**: build
+**Commit**: `docs(poker): documenta tempo limite, time bank e sair`
+
+```
+T10 → T11 → T12 → T13 → T14 → T15 → T16
+```
+
 ---
 
 ## Handoff

@@ -91,3 +91,38 @@ type PokerTable = {
 | Compra de cartas | Todas as cartas da mão numa chamada | Menos rede; mão nunca para no meio por falha da API |
 | Raise incompleto (all-in abaixo do mínimo) | `mayRaise=false` para quem já tinha agido | Regra oficial sem reabrir a rodada |
 | Restante do pote em empate | Primeiro vencedor à esquerda do botão | Regra oficial |
+
+---
+
+## Alteração: tempo limite, time bank e `.poker sair` (POKER-16..18)
+
+### Arquitetura
+
+O relógio é um timer em memória por grupo; o estado que precisa sobreviver a um reinício (extensões restantes, quem saiu) fica na mesa, em `assets/poker.json`. Ao reiniciar, o bot dá 30 s novos ao jogador da vez (o prazo antigo não é persistido).
+
+```mermaid
+flowchart TD
+    E["evento turn do motor"] --> C["poker.ts: startClock(chatId, jid)"]
+    C --> K["utils/pokerClock.ts<br/>setTimeout: aviso aos 20 s, fim aos 30 s"]
+    K -->|fim do tempo| H["poker.ts: onTimeout (com lock)"]
+    H -->|extensões > 0| T["pokerManager.useTimeBank → +30 s"]
+    H -->|sem extensões| F["applyAction fold → anuncia"]
+    H --> S["utils/activeSocket.ts<br/>socket atual (troca a cada reconexão)"]
+    L["loader.listenToMessages"] -->|setActiveSocket| S
+    I["index.ts após conectar"] --> R["poker.ts: resumePokerClocks"]
+```
+
+### Componentes
+
+- `src/utils/activeSocket.ts`: `setActiveSocket(socket)` / `getActiveSocket()`. O loader registra cada socket novo; timers usam sempre o atual, então funcionam depois de uma reconexão.
+- `src/utils/pokerClock.ts`: `startClock(chatId, durationMs, { onWarning, onExpire })` e `stopClock(chatId)`. Um relógio por grupo; começar um novo cancela o anterior.
+- `pokerManager.ts`: `TIME_BANK_EXTENSIONS = 3`, campo `timeBank` no jogador, `useTimeBank(table, jid)`; campo `left`, `leaveTable(table, jid) → PokerEvent[]`; quem saiu não recebe cartas, não é botão e aparece no resumo com `left: true`.
+- `poker.ts`: linha do relógio na mensagem de vez; liga o relógio a cada evento `turn` e desliga quando a mão ou a mesa acaba; `onTimeout` (extensão ou fold); subcomando `sair`; `resumePokerClocks()` chamado em `index.ts`.
+
+### Tech Decisions
+
+| Decision | Choice | Rationale |
+| --- | --- | --- |
+| Socket nos timers | Referência global ao socket atual, atualizada pelo loader | O socket capturado no comando morre numa reconexão (mesmo problema dos lembretes) |
+| Relógio entre ações | Só reinicia quando o motor emite `turn` | Um `sair` de quem não é da vez não pode zerar o relógio de quem é |
+| Saída fora da vez | Marca fold sem mover a vez; só encerra a mão se sobrar um ativo | A vez continua de quem estava jogando |

@@ -1,6 +1,7 @@
 # Mesa de poker (Texas Hold'em) — Especificação
 
 **Approved**: 2026-10-28 - user: "certo, entao pode dale"
+**Approved** (alteração POKER-16..18): 2026-10-28 - user: "sim" (aos padrões apresentados: aviso com 10 s, 30 s novos após reinício, sair antes do início sem resultado, mesa encerra com menos de 2 jogadores)
 **Approved** (alteração POKER-14, buy-in mínimo): 2026-10-28 - user: "o minimo de buy in deve ser valor inicial da mesa x 10"
 **Approved** (alteração POKER-13..15): 2026-10-28 - user: "melhorias: deixar todas as cartas visiveis nas proximas mensagens (flop, turn e river); criar comando "poker saldo" para mostrar o saldo atual do jogador que digitou; Limitar o buy in (ele pode pegar de buy in inciial ate 200 vezes o valor da aposta minima definida no comando de iniciar)"
 
@@ -19,8 +20,7 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Feature | Reason |
 | ------- | ------ |
 | Histórico/ranking entre mesas | Decisão do usuário: nada é armazenado depois que a mesa acaba |
-| Entrar depois que a mesa foi iniciada, rebuy, sair no meio | Não pedido; `.poker acabar` encerra a mesa para todos |
-| Tempo limite por jogada | Não pedido; a mesa espera o jogador da vez |
+| Entrar depois que a mesa foi iniciada, rebuy | Não pedido |
 | Outras variantes (Omaha etc.), ante, limite de aposta | Só Texas Hold'em no-limit foi pedido |
 | Dinheiro real / integração de pagamento | Os valores são só contagem de fichas em reais |
 | Figurinha (sticker) das cartas | Exige converter PNG → WebP; a imagem resolve o mesmo problema (ver Assumptions) |
@@ -62,6 +62,15 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Quem pode `iniciar` / `acabar` | Qualquer jogador sentado na mesa, ou um admin do grupo | Evita que alguém de fora encerre a mesa; admin destrava mesa abandonada | n |
 | Persistência | Estado da mesa em `assets/poker.json`, com uma entrada por grupo; a entrada é removida quando a mesa acaba | Decisão do usuário (arquivo dentro do projeto, limpo ao fim); mesmo padrão de `assets/reminders.json` | y |
 | Reinício do bot | A mesa continua de onde parou ao recarregar o arquivo | É o motivo de guardar em arquivo e não em memória | n |
+| Tempo por jogada | 30 segundos a partir da mensagem que marca o jogador da vez | User escolheu "30 segundos" (pesquisa: relógio da TDA dá 1 min + 10 s; shot clock do WSOP 2026, 20-30 s) | y |
+| Fim do tempo | Fold automático, mesmo quando o check seria possível | User: "No fim desse tempo, se ele nao jogar, é insta fold" (TDA: mão morta ao fim da contagem) | y |
+| Time bank | 3 extensões de 30 s por jogador, válidas para a mesa inteira (não recarregam); gastas automaticamente quando o tempo da jogada acaba, com aviso no grupo; sem extensões, fold | User escolheu "3 extensões de 30s, automáticas" | y |
+| Aviso antes do fim | Marca o jogador no grupo quando faltam 10 s (da jogada ou da extensão) | Contagem final de 10 s da TDA; no WhatsApp a pessoa pode não estar olhando o grupo | n |
+| Relógio após reinício do bot | O jogador da vez ganha 30 s novos a partir do reinício | O bot fora do ar não pode tirar a vez de ninguém | n |
+| `.poker sair` no meio de uma mão | Fold na hora; as fichas já apostadas ficam no pote; sai com o que sobrou; se era a vez dele, a vez passa | User escolheu "Fold na hora e sai" | y |
+| Resultado de quem sai | Ao sair, o bot mostra no grupo o resultado dele (buy-in → fichas, saldo); no resumo final ele aparece marcado "saiu", com o mesmo resultado | User: "sim, marcado como "saiu", mas tbm deve ter o resumo do que ele ganhou ou perdeu assim como todos os outros." | y |
+| `.poker sair` antes de a mesa começar | Remove o jogador sem resultado (nada foi jogado); ele pode entrar de novo | Nada a resumir; mantém a mesa aberta para os outros | n |
+| Mesa com menos de 2 jogadores com fichas depois de uma saída | Encerra a mesa com o resumo final, como quando sobra um jogador | Não há com quem jogar | n |
 | Onde os comandos funcionam | Só em grupo; no privado o bot responde com aviso | A mesa pertence a um grupo; o privado só recebe cartas | n |
 | Alias e nome do arquivo | Alias `poker`; arquivo `src/commands/member/poker.ts` | Alias único. Verificação de roteamento (`findCommandImport` sobre `dist/`, antes/depois, todos os inputs de 1-2 caracteres + prefixos de `poker`): nenhum input existente muda de destino; `po`, `pok`, `poke`, `ok`, `ke`, `oker` antes não acionavam nada e passam a ir para `poker` | n |
 
@@ -148,6 +157,40 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 6. WHILE uma mão está em andamento, WHEN um jogador que já colocou fichas no pote envia `.poker saldo` the bot SHALL mostrar esse valor separado e somá-lo às fichas no cálculo do saldo.
 7. IF quem envia `.poker saldo` não está na mesa THEN o bot SHALL recusar com aviso.
 
+### P1: Tempo limite e time bank
+
+**User Story**: Como jogador, quero que a vez de cada um tenha tempo limite, para a mesa não travar esperando quem sumiu.
+
+**Acceptance Criteria**:
+
+1. WHEN o bot marca um jogador da vez THEN a mensagem SHALL informar que ele tem 30 segundos e quantas extensões de time bank ainda tem.
+2. WHILE é a vez de um jogador, WHEN faltam 10 segundos para o fim do tempo (da jogada ou de uma extensão) the bot SHALL marcá-lo no grupo avisando quanto tempo resta.
+3. WHEN o tempo da jogada acaba e o jogador tem extensões THEN o bot SHALL gastar uma extensão, dar mais 30 segundos e avisar no grupo quantas restam.
+4. WHEN o tempo acaba e o jogador não tem extensões THEN o bot SHALL dar fold por ele e anunciar o fold por tempo.
+5. IF o tempo acaba quando o check seria possível THEN o bot SHALL dar fold mesmo assim.
+6. WHEN o jogador age dentro do tempo THEN o bot SHALL cancelar o relógio dele, sem gastar extensão.
+7. The bot SHALL dar a cada jogador 3 extensões por mesa, sem recarregar entre as mãos.
+8. WHEN o bot reinicia com uma mão em andamento THEN o jogador da vez SHALL ganhar 30 segundos novos.
+
+**Independent Test**: numa mesa de dois, o jogador da vez não age; depois de 30 s o bot avisa a extensão, e depois de mais 90 s (3 extensões) dá fold.
+
+### P1: Sair da mesa
+
+**User Story**: Como jogador, quero sair da mesa com `.poker sair` sem encerrar o jogo dos outros.
+
+**Acceptance Criteria**:
+
+1. WHEN um jogador sentado envia `.poker sair` antes de a mesa começar THEN o bot SHALL removê-lo da mesa e responder com a lista de jogadores.
+2. WHEN um jogador que está na mão envia `.poker sair` THEN o bot SHALL dar fold por ele, deixando no pote as fichas já apostadas.
+3. WHEN quem sai era o jogador da vez THEN o bot SHALL passar a vez ao próximo e anunciá-lo com as opções.
+4. WHEN um jogador sai de uma mesa iniciada THEN o bot SHALL mostrar no grupo o resultado dele: buy-in, fichas com que saiu e saldo.
+5. The bot SHALL deixar de distribuir cartas e de dar a vez a quem saiu.
+6. WHEN a mesa termina THEN o resumo final SHALL listar quem saiu, marcado "saiu", com buy-in, fichas e saldo como os demais.
+7. IF depois da saída restar menos de 2 jogadores com fichas THEN o bot SHALL encerrar a mesa com o resumo final.
+8. IF quem envia `.poker sair` não está na mesa THEN o bot SHALL recusar com aviso.
+
+**Independent Test**: numa mesa de três, um jogador sai no meio da mão; a mão segue com os outros dois e o resumo final o mostra como "saiu".
+
 ### P2: Ajuda
 
 **Acceptance Criteria**:
@@ -194,8 +237,19 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 | POKER-13 | Melhorias: AC 1-2 (mesa completa no turn/river) | Execute | Pending |
 | POKER-14 | Melhorias: AC 3-4 (buy-in máximo) | Execute | Pending |
 | POKER-15 | Melhorias: AC 5-7 (`.poker saldo`) | Execute | Pending |
+| POKER-16 | Tempo limite: AC 1-2, 4-6, 8 (relógio, aviso, fold por tempo) | Specify | Pending |
+| POKER-17 | Tempo limite: AC 3, 7 (time bank) | Specify | Pending |
+| POKER-18 | Sair da mesa: AC 1-8 | Specify | Pending |
 
-**Coverage:** 15 total, 15 mapped, 0 unmapped
+**Coverage:** 18 total, 18 mapped, 0 unmapped
+
+---
+
+## Sources
+
+- Regras da TDA 2011 (relógio de 1 min + contagem de 10 s; mão morta ao fim): https://homepokertourney.org/docs/rulebook/poker-rule-book-tda-2011-fullsize.pdf
+- Shot clock e time bank do WSOP 2026 (20-30 s por jogada, extensões de 30 s), segundo a imprensa: https://somuchpoker.com/news/new-wsop-main-event-shot-clock
+- Deck of Cards API: https://www.deckofcardsapi.com/
 
 ---
 
