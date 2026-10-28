@@ -87,6 +87,7 @@ describe('poker command', () => {
       expect(reply).toContain('.poker check → passar a vez sem apostar');
       expect(reply).toContain('.poker saldo → mostra as suas fichas e o seu saldo na mesa');
       expect(reply).toContain('Cada jogada tem 30 segundos');
+      expect(reply).toContain('.poker sair → sai da mesa sem encerrá-la (se estiver numa mão, é fold)');
       expect(reply).toContain('.poker allin → apostar todas as suas fichas');
     });
 
@@ -584,6 +585,144 @@ describe('poker command', () => {
       await jest.advanceTimersByTimeAsync(30000);
 
       expect(lastGroupMessage().text).toBe(`🤖 ⏳ ${tag(0)}, seu tempo acabou: usei 1 time bank (+30s). Restam 2.`);
+    });
+  });
+
+  describe('sair', () => {
+    it('should refuse when there is no table', async () => {
+      await expect(run('sair')).rejects.toThrow(WarningError);
+    });
+
+    it('should refuse someone who is not at the table', async () => {
+      seatPlayers([100, 100]);
+
+      await expect(run('sair', 9)).rejects.toThrow('Você não está na mesa.');
+    });
+
+    it('should free the seat before the table starts and list who is still seated', async () => {
+      seatPlayers([100, 100, 100]);
+
+      const mock = await run('sair', 1);
+
+      expect((mock.sendReply as jest.Mock).mock.calls[0][0]).toBe('🚪 Você saiu da mesa.\n\n*Jogadores:*\n1. p0\n2. p2');
+      expect(getTable(GROUP)!.players.map((player) => player.name)).toEqual(['p0', 'p2']);
+    });
+
+    it('should say nobody is seated when the last player leaves before the start', async () => {
+      seatPlayers([100]);
+
+      const mock = await run('sair', 0);
+
+      expect((mock.sendReply as jest.Mock).mock.calls[0][0]).toBe('🚪 Você saiu da mesa.\n\n*Jogadores:*\nNinguém sentado.');
+    });
+
+    it('should fold the player to act, show the result and pass the turn with a new clock', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+
+      await run('sair', 0);
+
+      const { text, mentions } = lastGroupMessage();
+      expect(text.split('\n').slice(0, 4)).toEqual([
+        '🤖 🚪 p0 saiu da mesa: buy-in R$ 1,00 → R$ 1,00 (+R$ 0,00)',
+        '🏳️ p0 desistiu da mão.',
+        '',
+        `${tag(1)}, é sua vez!`,
+      ]);
+      expect(mentions).toEqual([jid(1)]);
+
+      await jest.advanceTimersByTimeAsync(20000);
+      expect(lastGroupMessage().text).toBe(`🤖 ⏱️ ${tag(1)}, faltam 10 segundos para você jogar!`);
+    });
+
+    it('should leave the bets in the pot and keep the clock of the player to act when someone else leaves', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      await jest.advanceTimersByTimeAsync(15000);
+
+      await run('sair', 2);
+
+      expect(lastGroupMessage().text).toBe('🤖 🚪 p2 saiu da mesa: buy-in R$ 1,00 → R$ 0,90 (-R$ 0,10)\n🏳️ p2 desistiu da mão.');
+      await jest.advanceTimersByTimeAsync(5000);
+      expect(lastGroupMessage().text).toBe(`🤖 ⏱️ ${tag(0)}, faltam 10 segundos para você jogar!`);
+    });
+
+    it('should show only the result when the player was out of the hand', async () => {
+      const table = seatPlayers([100, 100, 100]);
+      table.players[2].chips = 0;
+      saveTable(table);
+      await run('iniciar');
+
+      await run('sair', 2);
+
+      expect(lastGroupMessage()).toEqual({
+        text: '🤖 🚪 p2 saiu da mesa: buy-in R$ 1,00 → R$ 0,00 (-R$ 1,00)',
+        mentions: [],
+      });
+    });
+
+    it('should end the table with everyone in the summary when only one player is left', async () => {
+      seatPlayers([100, 100]);
+      await run('iniciar');
+
+      await run('sair', 1);
+
+      expect(lastGroupMessage().text).toBe(
+        [
+          '🤖 🏁 *Mesa encerrada!*',
+          '🏆 p0 ficou com todas as fichas!',
+          '',
+          'p0: buy-in R$ 1,00 → R$ 1,10 (+R$ 0,10)',
+          'p1 (saiu): buy-in R$ 1,00 → R$ 0,90 (-R$ 0,10)',
+        ].join('\n')
+      );
+      expect(getTable(GROUP)).toBeNull();
+    });
+
+    it('should end the table between hands when the exit leaves fewer than two players', async () => {
+      seatPlayers([100, 100]);
+      deck = FILLER.slice(0, 9); // the API fails for the second hand
+      await run('iniciar');
+      await expect(run('fold', 0)).rejects.toThrow(DangerError);
+
+      await run('sair', 0);
+
+      expect(lastGroupMessage().text).toContain('Não há jogadores suficientes para continuar.');
+      expect(lastGroupMessage().text).toContain('p0 (saiu): buy-in R$ 1,00 → R$ 0,95 (-R$ 0,05)');
+      expect(getTable(GROUP)).toBeNull();
+    });
+
+    it('should keep the table open between hands when two players are still left', async () => {
+      seatPlayers([100, 100, 100]);
+      deck = FILLER.slice(0, 11); // the API fails for the second hand
+      await run('iniciar');
+      await run('fold', 0);
+      await expect(run('fold', 1)).rejects.toThrow(DangerError);
+
+      await run('sair', 0);
+
+      expect(lastGroupMessage().text).toBe('🤖 🚪 p0 saiu da mesa: buy-in R$ 1,00 → R$ 1,00 (+R$ 0,00)');
+      expect(getTable(GROUP)!.players.filter((player) => !player.left)).toHaveLength(2);
+    });
+
+    it('should not let who left start or end the table', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      await run('sair', 2);
+
+      await expect(run('acabar', 2)).rejects.toThrow('Só quem está na mesa ou um admin do grupo pode encerrar a mesa.');
+    });
+
+    it('should leave who left out of the chips line after a hand', async () => {
+      seatPlayers([100, 100, 100]);
+      deck = [...FILLER, ...FILLER];
+      await run('iniciar');
+      await run('sair', 2);
+
+      await run('fold', 0);
+
+      const result = groupTexts().find((text) => text.includes('Fichas:'))!;
+      expect(result).toContain('Fichas: p0 R$ 1,00 · p1 R$ 1,10');
     });
   });
 

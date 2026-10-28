@@ -21,6 +21,7 @@ import {
     getAllTables,
     getOptions,
     getTable,
+    leaveTable,
     maxBuyIn,
     minBuyIn,
     parseAmount,
@@ -43,6 +44,7 @@ const HELP = [
     `${POKER} entrar <nome> <buy-in> → entra na mesa (nome sem espaços; buy-in de 10 a 200 vezes o mínimo)`,
     `${POKER} iniciar → distribui as cartas e começa a mão`,
     `${POKER} saldo → mostra as suas fichas e o seu saldo na mesa`,
+    `${POKER} sair → sai da mesa sem encerrá-la (se estiver numa mão, é fold)`,
     `${POKER} acabar → encerra a mesa e mostra o resumo`,
     `${POKER} ajuda → mostra esta ajuda`,
     "",
@@ -69,6 +71,9 @@ const mention = (jid: string) => `@${jid.split("@")[0]}`;
 
 const signedPrice = (cents: number) => (cents < 0 ? `-${formatPrice(-cents)}` : `+${formatPrice(cents)}`);
 
+const result = ({ buyIn, chips }: { buyIn: number; chips: number }) =>
+    `buy-in ${formatPrice(buyIn)} → ${formatPrice(chips)} (${signedPrice(chips - buyIn)})`;
+
 const sendGroup = async (socket: any, chatId: string, text: string, mentions: string[] = []) => {
     await socket.sendMessage(chatId, { text: `${BOT_EMOJI} ${text}`, mentions });
 };
@@ -91,7 +96,7 @@ const isGroupAdmin = async (socket: any, chatId: string, userJid: string) => {
 };
 
 const requireManager = async (socket: any, table: PokerTable, userJid: string, action: string) => {
-    const seated = table.players.some((player) => player.jid === userJid);
+    const seated = table.players.some((player) => player.jid === userJid && !player.left);
     if (!seated && !(await isGroupAdmin(socket, table.chatId, userJid))) {
         throw new WarningError(`Só quem está na mesa ou um admin do grupo pode ${action}.`);
     }
@@ -180,7 +185,8 @@ const describeEvents = (table: PokerTable, events: PokerEvent[]) => {
     }
 
     if (!table.hand) {
-        lines.push("", "Fichas: " + table.players.map((player) => `${player.name} ${formatPrice(player.chips)}`).join(" · "));
+        const seated = table.players.filter((player) => !player.left);
+        lines.push("", "Fichas: " + seated.map((player) => `${player.name} ${formatPrice(player.chips)}`).join(" · "));
     }
 
     return { text: lines.join("\n").trim(), mentions };
@@ -275,10 +281,7 @@ const finish = async (socket: any, table: PokerTable, reason: string) => {
         reason,
         ...(voided ? ["A mão em andamento foi anulada e as apostas voltaram para cada jogador."] : []),
         "",
-        ...summary.map(
-            (player) =>
-                `${player.name}: buy-in ${formatPrice(player.buyIn)} → ${formatPrice(player.chips)} (${signedPrice(player.balance)})`
-        ),
+        ...summary.map((player) => `${player.left ? `${player.name} (saiu)` : player.name}: ${result(player)}`),
     ];
 
     await sendGroup(socket, table.chatId, lines.join("\n"));
@@ -416,6 +419,38 @@ const play = async ({ socket, remoteJid, userJid }: CommonFunctions, action: Pok
     }
 };
 
+// The bets already made stay in the pot; the player's result is announced right away
+const leave = async ({ socket, remoteJid, userJid, sendReply }: CommonFunctions) => {
+    const table = requireTable(remoteJid);
+    const started = table.started;
+    const events = leaveTable(table, userJid);
+    saveTable(table);
+
+    if (!started) {
+        const seats = table.players.length
+            ? table.players.map((seated, index) => `${index + 1}. ${seated.name}`)
+            : ["Ninguém sentado."];
+        await sendReply(["🚪 Você saiu da mesa.", "", "*Jogadores:*", ...seats].join("\n"));
+        return;
+    }
+
+    const player = table.players.find((seated) => seated.jid === userJid)!;
+    const exit = `🚪 ${player.name} saiu da mesa: ${result(player)}`;
+    if (events.length) {
+        await announce(socket, table, events, exit);
+    } else {
+        await sendGroup(socket, remoteJid, exit);
+    }
+
+    if (table.hand) return;
+
+    if (events.some((event) => event.type === "foldWin")) {
+        await afterHand(socket, table);
+    } else if (playersWithChips(table).length < MIN_PLAYERS) {
+        await finish(socket, table, "Não há jogadores suficientes para continuar.");
+    }
+};
+
 const end = async ({ socket, remoteJid, userJid }: CommonFunctions) => {
     const table = requireTable(remoteJid);
     await requireManager(socket, table, userJid, "encerrar a mesa");
@@ -435,6 +470,7 @@ export const poker: Command = {
         `${POKER} iniciar`,
         `${POKER} check | call | raise [valor] | fold | allin`,
         `${POKER} saldo`,
+        `${POKER} sair`,
         `${POKER} acabar`,
     ].join("\n"),
     handle: async (params) => {
@@ -456,6 +492,7 @@ export const poker: Command = {
             if (action === "iniciar") return start(params);
             if (action === "acabar") return end(params);
             if (action === "saldo") return balance(params);
+            if (action === "sair") return leave(params);
             if (ACTIONS.includes(action as PokerAction)) return play(params, action as PokerAction, args);
 
             throw new WarningError(`Subcomando "${subcommand}" não existe. Use ${POKER} ajuda.`);

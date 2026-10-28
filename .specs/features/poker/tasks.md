@@ -101,7 +101,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/commands/member/poker.ts`, `src/index.ts` · **Depends on**: T10, T12, T13 · **Requirement**: POKER-16, POKER-17 · **Tests**: unit (fake timers) · **Gate**: build
 **Commit**: `feat(poker): aplica tempo limite e time bank na vez de cada jogador`
 
-### T15: Subcomando `.poker sair` [ ]
+### T15: Subcomando `.poker sair` [x]
 **What**: `sair` com resultado do jogador, vez passada adiante e encerramento quando sobra menos de 2.
 **Where**: `src/commands/member/poker.ts` · **Depends on**: T11, T14 · **Requirement**: POKER-18 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona o subcomando sair`
