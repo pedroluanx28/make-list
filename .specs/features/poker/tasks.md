@@ -52,7 +52,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerManager.ts` · **Requirement**: POKER-01, 02, 04, 05, 06, 07, 08, 09, 12 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona motor da mesa com side pots e persistência`
 
-### T5: Comando `.poker` [ ]
+### T5: Comando `.poker` [x]
 **Where**: `src/commands/member/poker.ts` · **Requirement**: POKER-01..10 · **Tests**: unit (100%) · **Gate**: build
 **Commit**: `feat(poker): adiciona comando .poker`
 

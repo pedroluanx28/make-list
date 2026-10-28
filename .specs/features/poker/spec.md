@@ -60,7 +60,7 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Persistência | Estado da mesa em `assets/poker.json`, com uma entrada por grupo; a entrada é removida quando a mesa acaba | Decisão do usuário (arquivo dentro do projeto, limpo ao fim); mesmo padrão de `assets/reminders.json` | y |
 | Reinício do bot | A mesa continua de onde parou ao recarregar o arquivo | É o motivo de guardar em arquivo e não em memória | n |
 | Onde os comandos funcionam | Só em grupo; no privado o bot responde com aviso | A mesa pertence a um grupo; o privado só recebe cartas | n |
-| Alias e nome do arquivo | Alias `poker`; arquivo `src/commands/member/poker.ts` | Alias único; a verificação de roteamento confere os inputs curtos que mudam de destino (lição L-001) | n |
+| Alias e nome do arquivo | Alias `poker`; arquivo `src/commands/member/poker.ts` | Alias único. Verificação de roteamento (`findCommandImport` sobre `dist/`, antes/depois, todos os inputs de 1-2 caracteres + prefixos de `poker`): nenhum input existente muda de destino; `po`, `pok`, `poke`, `ok`, `ke`, `oker` antes não acionavam nada e passam a ir para `poker` | n |
 
 Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28 e aceitos na aprovação acima.
 
