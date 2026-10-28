@@ -7,9 +7,11 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
 }));
 
-import { poker } from '../../../src/commands/member/poker';
+import { poker, resumePokerClocks } from '../../../src/commands/member/poker';
+import { setActiveSocket } from '../../../src/utils/activeSocket';
+import { stopClock } from '../../../src/utils/pokerClock';
 import { DangerError, InvalidParameterError, WarningError } from '../../../src/errors';
-import { addPlayer, createTable, getTable, saveTable } from '../../../src/utils/pokerManager';
+import { addPlayer, createTable, getTable, saveTable, startHand, withTableLock } from '../../../src/utils/pokerManager';
 import { createMockCommonFunctions } from '../../mocks/commonFunctions';
 
 const GROUP = 'group@g.us';
@@ -52,6 +54,7 @@ describe('poker command', () => {
   });
 
   beforeEach(() => {
+    jest.useFakeTimers({ now: new Date('2026-10-28T12:00:00Z') });
     mockFiles.clear();
     deck = [...FILLER];
     mockFetch.mockClear();
@@ -59,6 +62,12 @@ describe('poker command', () => {
       sendMessage: jest.fn().mockResolvedValue(undefined),
       groupMetadata: jest.fn().mockResolvedValue({ participants: [], owner: undefined }),
     };
+    setActiveSocket(socket);
+  });
+
+  afterEach(() => {
+    stopClock(GROUP);
+    jest.useRealTimers();
   });
 
   describe('metadata', () => {
@@ -77,6 +86,7 @@ describe('poker command', () => {
       expect(reply).toContain('.poker abrir [mínimo]');
       expect(reply).toContain('.poker check → passar a vez sem apostar');
       expect(reply).toContain('.poker saldo → mostra as suas fichas e o seu saldo na mesa');
+      expect(reply).toContain('Cada jogada tem 30 segundos');
       expect(reply).toContain('.poker allin → apostar todas as suas fichas');
     });
 
@@ -226,6 +236,7 @@ describe('poker command', () => {
             '.poker fold → desistir da mão',
             '.poker allin → apostar todas as suas fichas (R$ 1,00)',
             '',
+            '⏱️ 30s para jogar · time bank: 3 × 30s',
             'Pote: R$ 0,15',
           ].join('\n'),
           mentions: [jid(0)],
@@ -294,6 +305,7 @@ describe('poker command', () => {
           '.poker fold → desistir da mão',
           '.poker allin → apostar todas as suas fichas (R$ 1,00)',
           '',
+          '⏱️ 30s para jogar · time bank: 3 × 30s',
           'Pote: R$ 0,25',
         ].join('\n')
       );
@@ -421,6 +433,157 @@ describe('poker command', () => {
       expect(texts[texts.length - 2]).toContain('*Showdown!*');
       expect(texts[texts.length - 1]).toContain('🏆 p1 ficou com todas as fichas!');
       expect(getTable(GROUP)).toBeNull();
+    });
+  });
+
+  describe('tempo limite', () => {
+    const timeBankOf = (seat: number) => getTable(GROUP)!.players[seat].timeBank;
+    const setTimeBank = (seat: number, value: number) => {
+      const table = getTable(GROUP)!;
+      table.players[seat].timeBank = value;
+      saveTable(table);
+    };
+
+    it('should tag the player when 10 seconds are left', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+
+      await jest.advanceTimersByTimeAsync(20000);
+
+      expect(lastGroupMessage()).toEqual({ text: `🤖 ⏱️ ${tag(0)}, faltam 10 segundos para você jogar!`, mentions: [jid(0)] });
+    });
+
+    it('should spend a time bank extension when the time runs out and keep the turn', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+
+      await jest.advanceTimersByTimeAsync(30000);
+
+      expect(lastGroupMessage()).toEqual({
+        text: `🤖 ⏳ ${tag(0)}, seu tempo acabou: usei 1 time bank (+30s). Restam 2.`,
+        mentions: [jid(0)],
+      });
+      expect(timeBankOf(0)).toBe(2);
+      expect(getTable(GROUP)!.hand!.current).toBe(0);
+    });
+
+    it('should warn again 10 seconds before an extension ends', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+
+      await jest.advanceTimersByTimeAsync(50000);
+
+      expect(lastGroupMessage().text).toBe(`🤖 ⏱️ ${tag(0)}, faltam 10 segundos para você jogar!`);
+    });
+
+    it('should fold the player when the time runs out with no extensions left and pass the turn', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+
+      await jest.advanceTimersByTimeAsync(120000);
+
+      const { text, mentions } = lastGroupMessage();
+      expect(text.split('\n').slice(0, 4)).toEqual([
+        '🤖 ⌛ Tempo esgotado: p0 não jogou a tempo.',
+        '🏳️ p0 desistiu da mão.',
+        '',
+        `${tag(1)}, é sua vez!`,
+      ]);
+      expect(mentions).toEqual([jid(1)]);
+      expect(getTable(GROUP)!.players[0]).toMatchObject({ folded: true, timeBank: 0 });
+      expect(getTable(GROUP)!.hand!.current).toBe(1);
+    });
+
+    it('should fold even when a check was possible', async () => {
+      seatPlayers([100, 100]);
+      deck = [...FILLER, ...FILLER];
+      await run('iniciar');
+      await run('call', 0);
+      setTimeBank(1, 0);
+
+      await jest.advanceTimersByTimeAsync(30000);
+
+      const timeout = groupTexts().find((text) => text.includes('Tempo esgotado'))!;
+      expect(timeout).toContain('🏳️ p1 desistiu da mão.');
+      expect(timeout).toContain(`🏆 ${tag(0)} levou o pote de R$ 0,20.`);
+    });
+
+    it('should start the clock over for the next player when someone acts in time', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      await jest.advanceTimersByTimeAsync(25000);
+
+      await run('call', 0);
+      await jest.advanceTimersByTimeAsync(10000);
+
+      expect(timeBankOf(0)).toBe(3);
+      expect(groupTexts().some((text) => text.includes('seu tempo acabou'))).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(10000);
+      expect(lastGroupMessage().text).toBe(`🤖 ⏱️ ${tag(1)}, faltam 10 segundos para você jogar!`);
+    });
+
+    it('should ignore a timer that fired while the turn was being played', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      let release: () => void = () => {};
+      const held = withTableLock(GROUP, () => new Promise<void>((resolve) => (release = resolve)));
+      const call = run('call', 0);
+
+      await jest.advanceTimersByTimeAsync(30000);
+      release();
+      await held;
+      await call;
+      await jest.advanceTimersByTimeAsync(0);
+
+      expect(timeBankOf(0)).toBe(3);
+      expect(groupTexts().some((text) => text.includes(`${tag(0)}, faltam 10 segundos`))).toBe(false);
+    });
+
+    it('should do nothing when the table is gone before the timer fires', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      const sent = socket.sendMessage.mock.calls.length;
+      mockFiles.clear();
+
+      await jest.advanceTimersByTimeAsync(30000);
+
+      expect(socket.sendMessage.mock.calls).toHaveLength(sent);
+    });
+
+    it('should stop the clock when the table ends', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      await run('acabar', 0);
+      const sent = socket.sendMessage.mock.calls.length;
+
+      await jest.advanceTimersByTimeAsync(120000);
+
+      expect(socket.sendMessage.mock.calls).toHaveLength(sent);
+    });
+
+    it('should tell the group when the next hand cannot be dealt after a fold by time', async () => {
+      seatPlayers([100, 100]);
+      deck = FILLER.slice(0, 9); // only the first hand: the API fails for the next one
+      await run('iniciar');
+      setTimeBank(0, 0);
+
+      await jest.advanceTimersByTimeAsync(30000);
+
+      expect(lastGroupMessage().text).toBe(
+        '🤖 ❌ Não consegui embaralhar as cartas agora (Deck of Cards API indisponível). Use .poker iniciar para tentar de novo.'
+      );
+    });
+
+    it('should give the player to act a full turn again after a restart', async () => {
+      const table = seatPlayers([100, 100, 100]);
+      startHand(table, FILLER.slice(0, 11));
+      saveTable(table);
+
+      resumePokerClocks();
+      await jest.advanceTimersByTimeAsync(30000);
+
+      expect(lastGroupMessage().text).toBe(`🤖 ⏳ ${tag(0)}, seu tempo acabou: usei 1 time bank (+30s). Restam 2.`);
     });
   });
 

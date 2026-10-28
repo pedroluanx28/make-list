@@ -98,6 +98,8 @@ const saveTables = (tables: Record<string, PokerTable>) => {
 
 export const getTable = (chatId: string): PokerTable | null => loadTables()[chatId] ?? null;
 
+export const getAllTables = (): PokerTable[] => Object.values(loadTables());
+
 export const saveTable = (table: PokerTable) => {
     const tables = loadTables();
     tables[table.chatId] = table;

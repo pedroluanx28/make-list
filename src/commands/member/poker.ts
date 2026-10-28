@@ -1,7 +1,9 @@
 import { BOT_EMOJI } from "../../config";
+import { getActiveSocket } from "../../utils/activeSocket";
 import { DangerError, InvalidParameterError, WarningError } from "../../errors";
 import { cardImageUrl, drawCards } from "../../utils/deckOfCards";
 import { formatPrice } from "../../utils/menuManager";
+import { TURN_TIME_MS, startClock, stopClock } from "../../utils/pokerClock";
 import { formatCards } from "../../utils/pokerHand";
 import {
     DEFAULT_MINIMUM,
@@ -13,8 +15,10 @@ import {
     applyAction,
     cardsNeeded,
     createTable,
+    currentPlayer,
     deleteTable,
     finishTable,
+    getAllTables,
     getOptions,
     getTable,
     maxBuyIn,
@@ -24,6 +28,8 @@ import {
     potTotal,
     saveTable,
     startHand,
+    timeBankLeft,
+    useTimeBank,
     withTableLock,
 } from "../../utils/pokerManager";
 
@@ -50,6 +56,7 @@ const HELP = [
     "*Regras*",
     "• A ordem de entrada define os lugares: na 1ª mão o 1º a entrar é o botão, o 2º o small blind e o 3º o big blind; depois gira no sentido horário.",
     "• As suas cartas chegam no seu privado.",
+    `• Cada jogada tem ${TURN_TIME_MS / 1000} segundos. Quando o tempo acaba, o bot usa uma das suas 3 extensões de time bank (+${TURN_TIME_MS / 1000}s cada, valem para a mesa toda); sem extensões, é fold automático.`,
     "• Valores em reais: 0.10, 0,10 ou 50.",
     `• A mesa acaba quando só um jogador tiver fichas ou com ${POKER} acabar.`,
 ].join("\n");
@@ -164,6 +171,7 @@ const describeEvents = (table: PokerTable, events: PokerEvent[]) => {
                     first ? `${tag(event.jid)} começa!` : `${tag(event.jid)}, é sua vez!`,
                     ...getOptions(table).map((option) => `${POKER} ${option}`),
                     "",
+                    `⏱️ ${TURN_TIME_MS / 1000}s para jogar · time bank: ${timeBankLeft(currentPlayer(table)!)} × ${TURN_TIME_MS / 1000}s`,
                     `Pote: ${formatPrice(potTotal(table))}`
                 );
                 break;
@@ -178,12 +186,86 @@ const describeEvents = (table: PokerTable, events: PokerEvent[]) => {
     return { text: lines.join("\n").trim(), mentions };
 };
 
-const announce = async (socket: any, table: PokerTable, events: PokerEvent[]) => {
+const announce = async (socket: any, table: PokerTable, events: PokerEvent[], header?: string) => {
     const { text, mentions } = describeEvents(table, events);
-    await sendGroup(socket, table.chatId, text, mentions);
+    await sendGroup(socket, table.chatId, header ? `${header}\n${text}` : text, mentions);
+
+    // The clock starts over every time the turn changes and stops when the hand ends
+    if (events.some((event) => event.type === "turn")) {
+        startTurnClock(table.chatId);
+    } else if (!table.hand) {
+        stopTurnClock(table.chatId);
+    }
 };
 
+// Each turn gets an id: a timer that fired for a turn already played (queued behind the lock) is ignored
+const turnIds = new Map<string, number>();
+let lastTurnId = 0;
+
+const stopTurnClock = (chatId: string) => {
+    turnIds.delete(chatId);
+    stopClock(chatId);
+};
+
+const isCurrentTurn = (chatId: string, turnId: number) => turnIds.get(chatId) === turnId;
+
+const runClock = (chatId: string, turnId: number) =>
+    startClock(chatId, {
+        onWarning: () => withTableLock(chatId, () => warnTurn(chatId, turnId)),
+        onExpire: () => withTableLock(chatId, () => expireTurn(chatId, turnId)),
+    });
+
+const startTurnClock = (chatId: string) => {
+    lastTurnId += 1;
+    turnIds.set(chatId, lastTurnId);
+    runClock(chatId, lastTurnId);
+};
+
+const warnTurn = async (chatId: string, turnId: number) => {
+    const table = getTable(chatId);
+    if (!isCurrentTurn(chatId, turnId) || !table?.hand) return;
+
+    const { jid } = currentPlayer(table)!;
+    await sendGroup(getActiveSocket(), chatId, `⏱️ ${mention(jid)}, faltam 10 segundos para você jogar!`, [jid]);
+};
+
+// Out of time: spend a time bank extension, or fold when there is none left (even if a check was possible)
+const expireTurn = async (chatId: string, turnId: number) => {
+    const table = getTable(chatId);
+    if (!isCurrentTurn(chatId, turnId) || !table?.hand) return;
+
+    const socket = getActiveSocket();
+    const player = currentPlayer(table)!;
+    const left = useTimeBank(table, player.jid);
+
+    if (left !== null) {
+        saveTable(table);
+        runClock(chatId, turnId);
+        await sendGroup(
+            socket,
+            chatId,
+            `⏳ ${mention(player.jid)}, seu tempo acabou: usei 1 time bank (+${TURN_TIME_MS / 1000}s). Restam ${left}.`,
+            [player.jid]
+        );
+        return;
+    }
+
+    const events = applyAction(table, player.jid, "fold");
+    saveTable(table);
+    await announce(socket, table, events, `⌛ Tempo esgotado: ${player.name} não jogou a tempo.`);
+
+    if (!table.hand) {
+        try {
+            await afterHand(socket, table);
+        } catch (error) {
+            await sendGroup(socket, chatId, `❌ ${error.message}`);
+        }
+    }
+};
+
+
 const finish = async (socket: any, table: PokerTable, reason: string) => {
+    stopTurnClock(table.chatId);
     const voided = Boolean(table.hand);
     const summary = finishTable(table);
     deleteTable(table.chatId);
@@ -379,4 +461,12 @@ export const poker: Command = {
             throw new WarningError(`Subcomando "${subcommand}" não existe. Use ${POKER} ajuda.`);
         });
     },
+};
+
+// Must stay declared after `poker`: the command loader takes the first export of each command file
+// After a restart the player to act gets a full turn again
+export const resumePokerClocks = () => {
+    getAllTables()
+        .filter((table) => table.hand)
+        .forEach((table) => startTurnClock(table.chatId));
 };

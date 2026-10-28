@@ -96,7 +96,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerClock.ts` · **Depends on**: None · **Requirement**: POKER-16 · **Tests**: unit (fake timers) · **Gate**: build
 **Commit**: `feat(poker): adiciona o relógio da vez`
 
-### T14: Tempo limite no comando [ ]
+### T14: Tempo limite no comando [x]
 **What**: linha do relógio na vez, liga/desliga o relógio, extensão ou fold por tempo, retomada após reinício.
 **Where**: `src/commands/member/poker.ts`, `src/index.ts` · **Depends on**: T10, T12, T13 · **Requirement**: POKER-16, POKER-17 · **Tests**: unit (fake timers) · **Gate**: build
 **Commit**: `feat(poker): aplica tempo limite e time bank na vez de cada jogador`
@@ -119,6 +119,6 @@ T10 → T11 → T12 → T13 → T14 → T15 → T16
 
 ## Handoff
 
-**Settled mid-build:** user: "certo, pode começar a codar!" - implementar sem revisar as tasks.
+**Settled mid-build:** user: "certo, pode começar a codar!" - implementar sem revisar as tasks. T14 tocou também `src/utils/pokerManager.ts` (`getAllTables`, para retomar os relógios) e declarou `resumePokerClocks` depois de `poker`, porque o carregador usa o primeiro export.
 **Dispatched:** none
 **Walked:** none
