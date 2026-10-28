@@ -56,7 +56,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/commands/member/poker.ts` · **Requirement**: POKER-01..10 · **Tests**: unit (100%) · **Gate**: build
 **Commit**: `feat(poker): adiciona comando .poker`
 
-### T6: Documentação [ ]
+### T6: Documentação [x]
 **Where**: `docs/poker.md`, `docs/README.md`, `README.md` · **Requirement**: DoD · **Tests**: none · **Gate**: build
 **Commit**: `docs(poker): documenta o comando .poker`
 
