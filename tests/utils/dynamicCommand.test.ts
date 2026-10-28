@@ -59,6 +59,16 @@ describe('dynamicCommand', () => {
       expect(params.sendWarningReply).not.toHaveBeenCalled();
     });
 
+    it.each(['/', '.'])('should run the command when the prefix is %p', async (prefix) => {
+      const command = createCommand();
+      mockFindCommandImport.mockReturnValue({ type: 'member', command });
+      const params = createMockCommonFunctions({ prefix });
+
+      await dynamicCommand(params);
+
+      expect(command.handle).toHaveBeenCalledTimes(1);
+    });
+
     it.each([
       ['no command and no type', { type: '', command: null }],
       ['a type but no command', { type: 'member', command: null }],
