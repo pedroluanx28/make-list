@@ -1,8 +1,11 @@
 import { TIMEOUT_BY_EVENT } from "./config";
 import { onMessagesUpsert } from "./middlewares/onMessagesUpsert";
+import { setActiveSocket } from "./utils/activeSocket";
 
 // Runs for every socket, including the ones created when the connection drops and reconnects
 export const listenToMessages = (socket) => {
+    setActiveSocket(socket);
+
     socket.ev.on("messages.upsert", ({ messages, type }) => {
         // Só processar mensagens novas (não antigas)
         if (type === 'notify') {

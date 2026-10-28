@@ -86,7 +86,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerManager.ts` · **Depends on**: T10 · **Requirement**: POKER-18 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): permite sair da mesa no motor`
 
-### T12: Socket ativo compartilhado [ ]
+### T12: Socket ativo compartilhado [x]
 **What**: `setActiveSocket`/`getActiveSocket`, registrado pelo loader a cada socket.
 **Where**: `src/utils/activeSocket.ts` · **Depends on**: None · **Requirement**: POKER-16 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(conexao): guarda o socket ativo para tarefas agendadas`
