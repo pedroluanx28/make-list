@@ -106,7 +106,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/commands/member/poker.ts` · **Depends on**: T11, T14 · **Requirement**: POKER-18 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona o subcomando sair`
 
-### T16: Documentação [ ]
+### T16: Documentação [x]
 **What**: ajuda do comando e `docs/poker.md` com tempo limite, time bank e `sair`.
 **Where**: `docs/poker.md` · **Depends on**: T15 · **Requirement**: DoD · **Tests**: none · **Gate**: build
 **Commit**: `docs(poker): documenta tempo limite, time bank e sair`

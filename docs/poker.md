@@ -70,6 +70,7 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 - **`.poker fold`**: desiste da mão.
 - **`.poker allin`**: aposta todas as suas fichas.
 - **`.poker saldo`**: responde a quem digitou com as suas fichas, o buy-in e o saldo. Durante uma mão, mostra também quanto você já colocou no pote, que entra no saldo.
+- **`.poker sair`**: sai da mesa sem encerrá-la. Antes de a mesa começar, só libera o lugar. Durante uma mão, é fold: o que você já apostou fica no pote, e o bot mostra o seu resultado (buy-in → fichas, saldo).
 - **`.poker acabar`**: encerra a mesa e envia o resumo.
 - **`.poker ajuda`**: lista os comandos e as regras.
 - **Valores**: em reais, com ponto ou vírgula (`0.10`, `0,10`, `50`).
@@ -80,8 +81,10 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 2. **Cartas**: a cada mão o bot compra um baralho novo e embaralhado na [Deck of Cards API](https://www.deckofcardsapi.com/) e manda as cartas no privado de cada jogador. Se a API falhar, a mão não começa e é só usar `.poker iniciar` de novo.
 3. **Apostas**: os blinds são lançados sozinhos e o pré-flop começa à esquerda do big blind. Depois do flop, começa o primeiro jogador ativo à esquerda do botão. O flop, o turn e o river aparecem no grupo em texto, sempre com todas as cartas da mesa (o turn mostra 4 e o river mostra 5).
 4. **Showdown**: o bot mostra as cartas de quem chegou ao fim, o nome da melhor mão de cada um e quem levou cada pote. Side pots são calculados quando alguém está all-in com menos fichas; empates dividem o pote.
-5. **Próxima mão**: começa automaticamente. Quem fica sem fichas sai das mãos seguintes.
-6. **Fim**: a mesa acaba quando só um jogador tem fichas ou com `.poker acabar`. Uma mão em andamento é anulada e as apostas voltam para cada jogador. O bot envia o resumo e apaga a mesa.
+5. **Tempo limite**: cada jogada tem 30 segundos, contados a partir da mensagem que marca o jogador da vez, e o relógio zera a cada troca de vez. Faltando 10 segundos, o bot marca o jogador. Quando o tempo acaba, o bot usa uma extensão de time bank (+30 s, com novo aviso aos 10 s). Cada jogador tem 3 extensões para a mesa inteira, sem recarga. Sem extensões, é fold automático, mesmo quando o check seria possível. Se o bot reiniciar no meio de uma mão, o jogador da vez ganha 30 segundos novos.
+6. **Sair**: quem sai com `.poker sair` deixa de receber cartas e de jogar. No resumo final aparece marcado "(saiu)", com o resultado com que saiu. Se sobrar menos de 2 jogadores com fichas, a mesa acaba.
+7. **Próxima mão**: começa automaticamente. Quem fica sem fichas sai das mãos seguintes.
+8. **Fim**: a mesa acaba quando só um jogador tem fichas ou com `.poker acabar`. Uma mão em andamento é anulada e as apostas voltam para cada jogador que ainda está na mesa. O bot envia o resumo e apaga a mesa.
 
 ## Arquivos
 
@@ -89,7 +92,9 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 - `src/utils/pokerManager.ts` - Regras da mesa, side pots, showdown e persistência
 - `src/utils/pokerHand.ts` - Avaliação das mãos e formatação das cartas
 - `src/utils/deckOfCards.ts` - Cliente da Deck of Cards API
-- `tests/commands/member/poker.test.ts`, `tests/utils/poker*.test.ts`, `tests/utils/deckOfCards.test.ts` - Testes
+- `src/utils/pokerClock.ts` - Relógio da vez (aviso aos 10 s e fim do tempo)
+- `src/utils/activeSocket.ts` - Conexão atual, usada pelos relógios mesmo depois de uma reconexão
+- `tests/commands/member/poker.test.ts`, `tests/utils/poker*.test.ts`, `tests/utils/deckOfCards.test.ts`, `tests/loader.test.ts` - Testes
 
 ## Recursos Técnicos
 
@@ -97,4 +102,5 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 - ✅ Comandos do mesmo grupo processados um por vez, para duas ações não se misturarem
 - ✅ Valores guardados em centavos inteiros
 - ✅ Raise mínimo, all-in incompleto que não reabre as apostas e side pots seguindo as regras oficiais
+- ✅ Tempo limite de 30 s por jogada e time bank de 3 extensões de 30 s por jogador, com base no relógio da TDA e no shot clock do WSOP
 - ✅ Sem histórico entre mesas
