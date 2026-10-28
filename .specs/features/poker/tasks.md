@@ -91,7 +91,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/activeSocket.ts` · **Depends on**: None · **Requirement**: POKER-16 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(conexao): guarda o socket ativo para tarefas agendadas`
 
-### T13: Relógio da vez [ ]
+### T13: Relógio da vez [x]
 **What**: `startClock`/`stopClock` com aviso aos 10 s restantes e fim do tempo.
 **Where**: `src/utils/pokerClock.ts` · **Depends on**: None · **Requirement**: POKER-16 · **Tests**: unit (fake timers) · **Gate**: build
 **Commit**: `feat(poker): adiciona o relógio da vez`
