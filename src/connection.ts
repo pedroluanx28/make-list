@@ -10,7 +10,7 @@ import { question, onlyNumbers } from "./utils"
 import { TEMP_DIR } from "./config";
 import { Boom } from '@hapi/boom';
 
-export const connect = async () => {
+export const connect = async (onSocket: (socket) => void = () => {}) => {
     const { state, saveCreds } = await useMultiFileAuthState(
         path.resolve(__dirname, "../", "assets", "auth", "baileys")
     );
@@ -60,12 +60,14 @@ export const connect = async () => {
             const shouldReconnect = (lastDisconnect.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
 
             if (shouldReconnect) {
-                connect()
+                connect(onSocket)
             }
         }
     });
 
     socket.ev.on("creds.update", saveCreds);
+
+    onSocket(socket);
 
     return socket;
 }
