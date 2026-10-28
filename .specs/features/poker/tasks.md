@@ -44,7 +44,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/deckOfCards.ts`, `src/utils/pokerHand.ts` (formatação) · **Requirement**: POKER-03 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona cliente da Deck of Cards API`
 
-### T3: Avaliação das mãos [ ]
+### T3: Avaliação das mãos [x]
 **Where**: `src/utils/pokerHand.ts` · **Requirement**: POKER-07 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): avalia e compara mãos de Texas Hold'em`
 
