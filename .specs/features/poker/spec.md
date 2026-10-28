@@ -69,6 +69,7 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Relógio após reinício do bot | O jogador da vez ganha 30 s novos a partir do reinício | O bot fora do ar não pode tirar a vez de ninguém | n |
 | `.poker sair` no meio de uma mão | Fold na hora; as fichas já apostadas ficam no pote; sai com o que sobrou; se era a vez dele, a vez passa | User escolheu "Fold na hora e sai" | y |
 | Resultado de quem sai | Ao sair, o bot mostra no grupo o resultado dele (buy-in → fichas, saldo); no resumo final ele aparece marcado "saiu", com o mesmo resultado | User: "sim, marcado como "saiu", mas tbm deve ter o resumo do que ele ganhou ou perdeu assim como todos os outros." | y |
+| Mesa encerrada na mesma mão em que alguém saiu | As apostas de quem saiu não voltam; as dos outros voltam | O critério de saída ("fichas já apostadas ficam no pote") é o mais específico; assim o resumo final repete o resultado anunciado na saída | n |
 | `.poker sair` antes de a mesa começar | Remove o jogador sem resultado (nada foi jogado); ele pode entrar de novo | Nada a resumir; mantém a mesa aberta para os outros | n |
 | Mesa com menos de 2 jogadores com fichas depois de uma saída | Encerra a mesa com o resumo final, como quando sobra um jogador | Não há com quem jogar | n |
 | Onde os comandos funcionam | Só em grupo; no privado o bot responde com aviso | A mesa pertence a um grupo; o privado só recebe cartas | n |

@@ -81,7 +81,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `src/utils/pokerManager.ts` · **Depends on**: None · **Requirement**: POKER-17 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): adiciona time bank de 3 extensões por jogador`
 
-### T11: Saída da mesa no motor [ ]
+### T11: Saída da mesa no motor [x]
 **What**: `leaveTable` (antes do início remove; na mão dá fold; marca `left`), quem saiu fora das próximas mãos e marcado no resumo.
 **Where**: `src/utils/pokerManager.ts` · **Depends on**: T10 · **Requirement**: POKER-18 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(poker): permite sair da mesa no motor`

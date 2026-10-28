@@ -20,7 +20,9 @@ import {
   finishTable,
   getOptions,
   getTable,
+  leaveTable,
   parseAmount,
+  playersWithChips,
   potTotal,
   saveTable,
   startHand,
@@ -640,8 +642,8 @@ describe('pokerManager', () => {
       table.players[1].chips = 50;
 
       expect(finishTable(table)).toEqual([
-        { name: 'p0', buyIn: 100, chips: 150, balance: 50 },
-        { name: 'p1', buyIn: 100, chips: 50, balance: -50 },
+        { name: 'p0', buyIn: 100, chips: 150, balance: 50, left: false },
+        { name: 'p1', buyIn: 100, chips: 50, balance: -50, left: false },
       ]);
     });
 
@@ -687,6 +689,106 @@ describe('pokerManager', () => {
 
       expect(timeBankLeft(table.players[0])).toBe(3);
       expect(useTimeBank(table, jid(0))).toBe(2);
+    });
+  });
+
+  describe('leaveTable', () => {
+    it('should refuse someone who is not at the table', () => {
+      const table = setupTable([100, 100]);
+
+      expect(() => leaveTable(table, jid(9))).toThrow('Você não está na mesa.');
+    });
+
+    it('should free the seat before the table starts so the player can join again', () => {
+      const table = setupTable([100, 100, 100]);
+
+      expect(leaveTable(table, jid(1))).toEqual([]);
+
+      expect(table.players.map((player) => player.name)).toEqual(['p0', 'p2']);
+      addPlayer(table, jid(1), 'p1', 100);
+      expect(table.players).toHaveLength(3);
+    });
+
+    it('should fold the player to act and pass the turn to the next one', () => {
+      const table = setupTable([100, 100, 100]);
+      startHand(table, fillerDeal(3));
+
+      const events = leaveTable(table, jid(0));
+
+      expect(events[0]).toEqual({ type: 'action', jid: jid(0), action: 'fold', total: 0, allIn: false });
+      expect(turnOf(events)).toBe(jid(1));
+      expect(table.players[0]).toMatchObject({ folded: true, left: true, chips: 100 });
+    });
+
+    it('should leave the bets already made in the pot', () => {
+      const table = setupTable([100, 100, 100]);
+      startHand(table, fillerDeal(3));
+      act(table, 0, 'call');
+
+      leaveTable(table, jid(1));
+
+      expect(table.players[1].chips).toBe(95);
+      expect(potTotal(table)).toBe(25);
+    });
+
+    it('should keep the turn with the player to act when someone else leaves', () => {
+      const table = setupTable([100, 100, 100]);
+      startHand(table, fillerDeal(3));
+
+      const events = leaveTable(table, jid(2));
+
+      expect(events).toEqual([{ type: 'action', jid: jid(2), action: 'fold', total: 10, allIn: false }]);
+      expect(currentPlayer(table)!.jid).toBe(jid(0));
+    });
+
+    it('should give the pot to the last active player when the one leaving was the other', () => {
+      const table = setupTable([100, 100]);
+      startHand(table, fillerDeal(2));
+
+      const events = leaveTable(table, jid(1));
+
+      expect(events).toContainEqual({ type: 'foldWin', jid: jid(0), amount: 15 });
+      expect(table.hand).toBeNull();
+    });
+
+    it('should leave without folding when the player is not in the hand', () => {
+      const table = setupTable([100, 100, 100]);
+      table.players[2].chips = 0;
+      startHand(table, fillerDeal(2));
+
+      expect(leaveTable(table, jid(2))).toEqual([]);
+      expect(table.players[2].left).toBe(true);
+    });
+
+    it('should not deal cards, give the button or count chips of who left', () => {
+      const table = setupTable([100, 100, 100]);
+      startHand(table, fillerDeal(3));
+      leaveTable(table, jid(1));
+      finishTable(table);
+
+      startHand(table, fillerDeal(2));
+
+      expect(table.players[1].cards).toEqual([]);
+      expect(table.players[1].inHand).toBe(false);
+      expect(table.dealer).toBe(2);
+      expect(playersWithChips(table).map((player) => player.name)).toEqual(['p0', 'p2']);
+    });
+
+    it('should list who left in the summary with their result', () => {
+      const table = setupTable([100, 100, 100]);
+      startHand(table, fillerDeal(3));
+      act(table, 0, 'call');
+      leaveTable(table, jid(1));
+
+      expect(finishTable(table)[1]).toEqual({ name: 'p1', buyIn: 100, chips: 95, balance: -5, left: true });
+    });
+
+    it('should refuse a second exit of the same player', () => {
+      const table = setupTable([100, 100, 100]);
+      startHand(table, fillerDeal(3));
+      leaveTable(table, jid(2));
+
+      expect(() => leaveTable(table, jid(2))).toThrow('Você não está na mesa.');
     });
   });
 

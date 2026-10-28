@@ -32,6 +32,7 @@ export type PokerPlayer = {
     acted: boolean; // acted since the last full raise
     mayRaise: boolean; // false after an all-in below the minimum raise: only call or fold
     timeBank?: number; // extensions left for the whole table; missing on tables saved before it existed
+    left?: boolean; // left with .poker sair: keeps the seat only for the final summary
 };
 
 export type PokerHand = {
@@ -65,7 +66,7 @@ export type PokerEvent =
     | { type: "foldWin"; jid: string; amount: number }
     | { type: "showdown"; hands: ShowdownHand[]; pots: PotResult[] };
 
-export type PlayerSummary = { name: string; buyIn: number; chips: number; balance: number };
+export type PlayerSummary = { name: string; buyIn: number; chips: number; balance: number; left: boolean };
 
 const POKER_FILE = path.join(__dirname, "../../assets/poker.json");
 
@@ -229,7 +230,9 @@ export const useTimeBank = (table: PokerTable, jid: string): number | null => {
     return player.timeBank;
 };
 
-export const playersWithChips = (table: PokerTable) => table.players.filter((player) => player.chips > 0);
+const canPlay = (player: PokerPlayer) => player.chips > 0 && !player.left;
+
+export const playersWithChips = (table: PokerTable) => table.players.filter(canPlay);
 
 export const potTotal = (table: PokerTable) =>
     table.players.reduce((total, player) => total + player.committed, 0);
@@ -270,13 +273,13 @@ export const startHand = (table: PokerTable, cards: string[]): PokerEvent[] => {
 
     table.started = true;
     table.handNumber += 1;
-    table.dealer = nextSeat(table, table.dealer, (player) => player.chips > 0);
+    table.dealer = nextSeat(table, table.dealer, canPlay);
 
     const deck = [...cards];
     for (let step = 0; step < table.players.length; step++) {
         const player = table.players[(table.dealer + step) % table.players.length];
         Object.assign(player, {
-            inHand: player.chips > 0,
+            inHand: canPlay(player),
             cards: [],
             bet: 0,
             committed: 0,
@@ -580,11 +583,14 @@ export const getOptions = (table: PokerTable): string[] => {
     return options;
 };
 
-// Ends the table: a hand in progress is voided and every bet goes back to who made it
+// Ends the table: a hand in progress is voided and the bets go back to the players still seated
 export const finishTable = (table: PokerTable): PlayerSummary[] => {
     if (table.hand) {
         for (const player of table.players) {
-            player.chips += player.committed;
+            // Who left already lost the bets, as announced when they left
+            if (!player.left) {
+                player.chips += player.committed;
+            }
         }
         endHand(table);
     }
@@ -594,5 +600,38 @@ export const finishTable = (table: PokerTable): PlayerSummary[] => {
         buyIn: player.buyIn,
         chips: player.chips,
         balance: player.chips - player.buyIn,
+        left: Boolean(player.left),
     }));
+};
+
+// Before the first hand the player just gives up the seat; after it, a hand in progress is folded
+// and the player keeps the seat only to show up in the final summary
+export const leaveTable = (table: PokerTable, jid: string): PokerEvent[] => {
+    const player = table.players.find((seated) => seated.jid === jid);
+    if (!player || player.left) {
+        throw new WarningError("Você não está na mesa.");
+    }
+
+    if (!table.started) {
+        table.players.splice(table.players.indexOf(player), 1);
+        return [];
+    }
+
+    let events: PokerEvent[] = [];
+    if (table.hand && isActive(player)) {
+        if (table.players[table.hand.current] === player) {
+            events = applyAction(table, jid, "fold");
+        } else {
+            // Out of turn: the player to act keeps the turn
+            player.folded = true;
+            events = [{ type: "action", jid, action: "fold", total: player.bet, allIn: false }];
+            const active = table.players.filter(isActive);
+            if (active.length === 1) {
+                events.push(winByFold(table, active[0]));
+            }
+        }
+    }
+
+    player.left = true;
+    return events;
 };
