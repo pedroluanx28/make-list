@@ -1,6 +1,7 @@
 # Mesa de poker (Texas Hold'em) — Especificação
 
 **Approved**: 2026-10-28 - user: "certo, entao pode dale"
+**Approved** (alteração POKER-13..15): 2026-10-28 - user: "melhorias: deixar todas as cartas visiveis nas proximas mensagens (flop, turn e river); criar comando "poker saldo" para mostrar o saldo atual do jogador que digitou; Limitar o buy in (ele pode pegar de buy in inciial ate 200 vezes o valor da aposta minima definida no comando de iniciar)"
 
 ## Problem Statement
 
@@ -37,7 +38,7 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Valores | Em reais com até 2 casas decimais (`0.10`, `0,10` e `50` aceitos); guardados internamente em centavos inteiros | Decisão do usuário (default 0.10); centavos evitam erro de ponto flutuante | n |
 | Mínimo da mesa | `.poker abrir [minimo]` define o big blind; default `0.10` | Decisão do usuário | y |
 | Small blind | Metade do mínimo, arredondada para baixo em centavos (mínimo 0.15 → small 0.07) | Decisão do usuário ("metade do mínimo"); arredondamento para baixo é o mais comum | n (arredondamento) |
-| Buy-in | Precisa ser ≥ mínimo da mesa | Sem isso o jogador não paga nem o big blind | n |
+| Buy-in | De 1 a 200 vezes o mínimo da mesa (com o padrão 0.10: de R$ 0,10 a R$ 20,00) | Mínimo: sem isso o jogador não paga nem o big blind. Máximo: pedido do usuário ("até 200 vezes o valor da aposta mínima"); o mínimo é o definido no `.poker abrir` | y |
 | Jogadores | De 2 a 10 por mesa; uma mesa por grupo | 10 é o máximo de uma mesa real; 2·10 + 5 = 25 cartas cabem no baralho | n |
 | Posições | Ordem de entrada define os assentos; na 1ª mão o 1º a entrar é o botão, o 2º small, o 3º big; depois gira no sentido horário (próximo assento) | Decisão do usuário | y |
 | Heads-up (2 jogadores) | Botão é o small blind e age primeiro no pré-flop; o outro é o big blind | Regra oficial do Texas Hold'em | n |
@@ -49,7 +50,8 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Side pots | Calculados quando alguém está all-in com menos fichas que os outros | Necessário para all-in funcionar corretamente | n |
 | Baralho | Deck of Cards API (`deckofcardsapi.com`): um baralho novo embaralhado por mão, e todas as cartas da mão (2 por jogador + 5 da mesa) são compradas numa única chamada no início e guardadas no arquivo | Decisão do usuário (usar a API); comprar tudo de uma vez reduz chamadas de rede e falhas no meio da mão | n |
 | Cartas no privado | Uma imagem por carta (`https://deckofcardsapi.com/static/img/<code>.png`), seguida de uma mensagem de texto `[10♥️] [6♥️]`; se o envio da imagem falhar, manda só o texto | Decisão do usuário: imagem se possível, texto como alternativa. O Baileys envia imagem por URL | n |
-| Cartas da mesa (flop, turn, river) | Mensagem de texto no grupo, no formato `[A♠️] [K♦️] [7♣️]` | Decisão do usuário | y |
+| Cartas da mesa (flop, turn, river) | Mensagem de texto no grupo, no formato `[A♠️] [K♦️] [7♣️]`, sempre com todas as cartas da mesa (turn mostra 4, river mostra 5) | Decisão do usuário ("deixar todas as cartas visíveis nas próximas mensagens") | y |
+| `.poker saldo` | Responde só a quem digitou: fichas atuais, buy-in, saldo (fichas − buy-in) e, durante uma mão, quanto já está no pote | Pedido do usuário ("mostrar o saldo atual do jogador que digitou"); as fichas no pote ainda não são ganho nem perda | n |
 | Avaliação das mãos | Melhor combinação de 5 entre as 7 cartas; empate divide o pote; centavo que sobrar vai para o primeiro vencedor à esquerda do botão | Regra oficial | n |
 | Próxima mão | Começa automaticamente depois do showdown, com o botão no próximo jogador que ainda tem fichas | Decisão do usuário (mesa só acaba quando sobra 1 com fichas) | n |
 | Jogador sem fichas | Eliminado: não recebe cartas nas mãos seguintes, mas aparece no resumo final | Necessário para "sobrar 1 jogador com fichas" | n |
@@ -132,6 +134,18 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 3. WHEN a mesa é encerrada THEN o bot SHALL mandar no grupo um resumo com, para cada jogador, nome, buy-in, fichas finais e saldo (+/-), e SHALL remover a mesa do grupo de `assets/poker.json`.
 4. IF não há mesa ou quem envia `.poker acabar` não é jogador nem admin THEN o bot SHALL recusar com aviso.
 
+### P1: Melhorias pedidas no teste
+
+**Acceptance Criteria**:
+
+1. WHEN o turn é revelado THEN o bot SHALL mostrar no grupo as 4 cartas da mesa.
+2. WHEN o river é revelado THEN o bot SHALL mostrar no grupo as 5 cartas da mesa.
+3. IF o buy-in de `.poker entrar` é maior que 200 vezes o mínimo da mesa THEN o bot SHALL recusar com `InvalidParameterError` informando o máximo.
+4. WHEN a mesa é aberta THEN o bot SHALL informar o buy-in mínimo e máximo.
+5. WHEN um jogador sentado envia `.poker saldo` THEN o bot SHALL responder (reply) com o nome, as fichas atuais, o buy-in e o saldo (fichas − buy-in).
+6. WHILE uma mão está em andamento, WHEN um jogador da mão envia `.poker saldo` the bot SHALL incluir quanto ele já colocou no pote nesta mão.
+7. IF quem envia `.poker saldo` não está na mesa THEN o bot SHALL recusar com aviso.
+
 ### P2: Ajuda
 
 **Acceptance Criteria**:
@@ -175,8 +189,11 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 | POKER-10 | P2 Ajuda | Specify | Pending |
 | POKER-11 | P2 Prefixo `.` | Specify | Pending |
 | POKER-12 | Edge cases | Specify | Pending |
+| POKER-13 | Melhorias: AC 1-2 (mesa completa no turn/river) | Execute | Pending |
+| POKER-14 | Melhorias: AC 3-4 (buy-in máximo) | Execute | Pending |
+| POKER-15 | Melhorias: AC 5-7 (`.poker saldo`) | Execute | Pending |
 
-**Coverage:** 12 total, 12 mapped, 0 unmapped
+**Coverage:** 15 total, 15 mapped, 0 unmapped
 
 ---
 

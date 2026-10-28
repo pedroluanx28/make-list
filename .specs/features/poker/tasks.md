@@ -60,6 +60,18 @@ T1 → T2 → T3 → T4 → T5 → T6
 **Where**: `docs/poker.md`, `docs/README.md`, `README.md` · **Requirement**: DoD · **Tests**: none · **Gate**: build
 **Commit**: `docs(poker): documenta o comando .poker`
 
+### T7: Mesa completa no turn e no river [ ]
+**Where**: `src/utils/pokerManager.ts`, `src/commands/member/poker.ts` · **Requirement**: POKER-13 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(poker): mostra todas as cartas da mesa no turn e no river`
+
+### T8: Buy-in máximo de 200 vezes o mínimo [ ]
+**Where**: `src/utils/pokerManager.ts`, `src/commands/member/poker.ts` · **Requirement**: POKER-14 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(poker): limita o buy-in a 200 vezes o mínimo da mesa`
+
+### T9: Comando `.poker saldo` [ ]
+**Where**: `src/commands/member/poker.ts`, `docs/poker.md` · **Requirement**: POKER-15 · **Tests**: unit · **Gate**: build
+**Commit**: `feat(poker): adiciona o subcomando saldo`
+
 ---
 
 ## Handoff
