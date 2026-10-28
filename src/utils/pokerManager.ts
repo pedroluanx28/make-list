@@ -8,6 +8,7 @@ import { compareScores, evaluateHand } from "./pokerHand";
 export const DEFAULT_MINIMUM = 10;
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 10;
+export const MIN_BUY_IN_MULTIPLIER = 10;
 export const MAX_BUY_IN_MULTIPLIER = 200;
 const MAX_NAME_LENGTH = 20;
 const BOARD_SIZE = 5;
@@ -156,6 +157,7 @@ export const createTable = (chatId: string, minimum: number = DEFAULT_MINIMUM): 
     };
 };
 
+export const minBuyIn = (table: PokerTable) => table.minimum * MIN_BUY_IN_MULTIPLIER;
 export const maxBuyIn = (table: PokerTable) => table.minimum * MAX_BUY_IN_MULTIPLIER;
 
 export const addPlayer = (table: PokerTable, jid: string, name: string, buyIn: number): PokerPlayer => {
@@ -179,8 +181,10 @@ export const addPlayer = (table: PokerTable, jid: string, name: string, buyIn: n
         throw new WarningError(`Já tem um jogador chamado ${name} na mesa. Escolha outro nome.`);
     }
 
-    if (buyIn < table.minimum) {
-        throw new InvalidParameterError(`o buy-in precisa ser de pelo menos ${formatPrice(table.minimum)} (o mínimo da mesa).`);
+    if (buyIn < minBuyIn(table)) {
+        throw new InvalidParameterError(
+            `o buy-in mínimo é ${formatPrice(minBuyIn(table))} (${MIN_BUY_IN_MULTIPLIER} vezes o mínimo da mesa).`
+        );
     }
 
     if (buyIn > maxBuyIn(table)) {

@@ -1,6 +1,7 @@
 # Mesa de poker (Texas Hold'em) — Especificação
 
 **Approved**: 2026-10-28 - user: "certo, entao pode dale"
+**Approved** (alteração POKER-14, buy-in mínimo): 2026-10-28 - user: "o minimo de buy in deve ser valor inicial da mesa x 10"
 **Approved** (alteração POKER-13..15): 2026-10-28 - user: "melhorias: deixar todas as cartas visiveis nas proximas mensagens (flop, turn e river); criar comando "poker saldo" para mostrar o saldo atual do jogador que digitou; Limitar o buy in (ele pode pegar de buy in inciial ate 200 vezes o valor da aposta minima definida no comando de iniciar)"
 
 ## Problem Statement
@@ -38,7 +39,7 @@ O grupo quer jogar Texas Hold'em pelo WhatsApp sem app externo: alguém abre uma
 | Valores | Em reais com até 2 casas decimais (`0.10`, `0,10` e `50` aceitos); guardados internamente em centavos inteiros | Decisão do usuário (default 0.10); centavos evitam erro de ponto flutuante | n |
 | Mínimo da mesa | `.poker abrir [minimo]` define o big blind; default `0.10` | Decisão do usuário | y |
 | Small blind | Metade do mínimo, arredondada para baixo em centavos (mínimo 0.15 → small 0.07) | Decisão do usuário ("metade do mínimo"); arredondamento para baixo é o mais comum | n (arredondamento) |
-| Buy-in | De 1 a 200 vezes o mínimo da mesa (com o padrão 0.10: de R$ 0,10 a R$ 20,00) | Mínimo: sem isso o jogador não paga nem o big blind. Máximo: pedido do usuário ("até 200 vezes o valor da aposta mínima"); o mínimo é o definido no `.poker abrir` | y |
+| Buy-in | De 10 a 200 vezes o mínimo da mesa (com o padrão 0.10: de R$ 1,00 a R$ 20,00) | Mínimo: user: "o minimo de buy in deve ser valor inicial da mesa x 10". Máximo: pedido do usuário ("até 200 vezes o valor da aposta mínima"); o mínimo é o definido no `.poker abrir` | y |
 | Jogadores | De 2 a 10 por mesa; uma mesa por grupo | 10 é o máximo de uma mesa real; 2·10 + 5 = 25 cartas cabem no baralho | n |
 | Posições | Ordem de entrada define os assentos; na 1ª mão o 1º a entrar é o botão, o 2º small, o 3º big; depois gira no sentido horário (próximo assento) | Decisão do usuário | y |
 | Heads-up (2 jogadores) | Botão é o small blind e age primeiro no pré-flop; o outro é o big blind | Regra oficial do Texas Hold'em | n |
@@ -82,7 +83,7 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 2. IF já existe mesa no grupo THEN `.poker abrir` SHALL ser recusado com aviso.
 3. IF `minimo` não é um valor positivo com até 2 casas decimais THEN o bot SHALL recusar com `InvalidParameterError`.
 4. WHEN alguém envia `.poker entrar <nome> <buyin>` numa mesa ainda não iniciada THEN o bot SHALL sentá-lo no próximo assento e responder com a lista de jogadores na ordem dos assentos.
-5. IF a pessoa já está na mesa, o nome já é usado, o buy-in é inválido ou menor que o mínimo, a mesa está cheia (10) ou já foi iniciada THEN `.poker entrar` SHALL ser recusado com aviso explicando o motivo.
+5. IF a pessoa já está na mesa, o nome já é usado, o buy-in é inválido ou fora do intervalo permitido, a mesa está cheia (10) ou já foi iniciada THEN `.poker entrar` SHALL ser recusado com aviso explicando o motivo.
 
 ### P1: Distribuir as cartas e iniciar ⭐ MVP
 
@@ -141,6 +142,7 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 1. WHEN o turn é revelado THEN o bot SHALL mostrar no grupo as 4 cartas da mesa.
 2. WHEN o river é revelado THEN o bot SHALL mostrar no grupo as 5 cartas da mesa.
 3. IF o buy-in de `.poker entrar` é maior que 200 vezes o mínimo da mesa THEN o bot SHALL recusar com `InvalidParameterError` informando o máximo.
+3a. IF o buy-in de `.poker entrar` é menor que 10 vezes o mínimo da mesa THEN o bot SHALL recusar com `InvalidParameterError` informando o mínimo.
 4. WHEN a mesa é aberta THEN o bot SHALL informar o buy-in mínimo e máximo.
 5. WHEN um jogador sentado envia `.poker saldo` THEN o bot SHALL responder (reply) com o nome, as fichas atuais, o buy-in e o saldo (fichas − buy-in).
 6. WHILE uma mão está em andamento, WHEN um jogador que já colocou fichas no pote envia `.poker saldo` the bot SHALL mostrar esse valor separado e somá-lo às fichas no cálculo do saldo.

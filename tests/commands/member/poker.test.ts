@@ -108,7 +108,7 @@ describe('poker command', () => {
       const reply = (mock.sendReply as jest.Mock).mock.calls[0][0];
       expect(reply).toContain('Mesa de poker aberta!');
       expect(reply).toContain('Blinds: small R$ 0,05 · big R$ 0,10');
-      expect(reply).toContain('Buy-in: de R$ 0,10 a R$ 20,00');
+      expect(reply).toContain('Buy-in: de R$ 1,00 a R$ 20,00');
       expect(getTable(GROUP)!.minimum).toBe(10);
     });
 
@@ -392,7 +392,9 @@ describe('poker command', () => {
     });
 
     it('should name the main and side pots and a split pot', async () => {
-      seatPlayers([100, 30, 100]);
+      const table = seatPlayers([100, 100, 100]);
+      table.players[1].chips = 30;
+      saveTable(table);
       // p0 and p2 tie with the board straight; p1 has the best hand but is all-in for less
       deck = ['2C', '3D', '0S', '0H', '2H', '3S', '9S', '8H', '7D', '6C', '5S', ...FILLER];
       await run('iniciar');

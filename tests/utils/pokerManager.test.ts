@@ -197,10 +197,20 @@ describe('pokerManager', () => {
       );
     });
 
-    it('should refuse a buy-in below the table minimum', () => {
+    it('should accept a buy-in of exactly 10 times the table minimum', () => {
       const table = setupTable([]);
 
-      expect(() => addPlayer(table, jid(0), 'p0', 9)).toThrow(InvalidParameterError);
+      addPlayer(table, jid(0), 'p0', 100);
+
+      expect(table.players[0].chips).toBe(100);
+    });
+
+    it('should refuse a buy-in below 10 times the table minimum', () => {
+      const table = setupTable([]);
+
+      expect(() => addPlayer(table, jid(0), 'p0', 99)).toThrow(
+        'o buy-in mínimo é R$ 1,00 (10 vezes o mínimo da mesa).'
+      );
     });
   });
 
@@ -425,7 +435,8 @@ describe('pokerManager', () => {
     });
 
     it('should not let who already acted re-raise after a short all-in', () => {
-      const table = setupTable([100, 100, 60]);
+      const table = setupTable([100, 100, 100]);
+      table.players[2].chips = 60;
       startHand(table, fillerDeal(3));
       act(table, 0, 'raise', 40); // a raise of 30: the next full raise must add 30 more
       act(table, 1, 'call');
@@ -533,7 +544,8 @@ describe('pokerManager', () => {
     });
 
     it('should split side pots so a short all-in only wins the main pot', () => {
-      const table = setupTable([100, 30, 100]);
+      const table = setupTable([100, 100, 100]);
+      table.players[1].chips = 30;
       const cards = deal([['KS', 'KH'], ['AS', 'AH'], ['2C', '7D']], ['AD', 'KD', '9C', '5S', '3H']);
       startHand(table, cards);
       act(table, 0, 'allin');

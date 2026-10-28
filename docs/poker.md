@@ -62,7 +62,7 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 ## Formatos dos Parâmetros
 
 - **`.poker abrir [mínimo]`**: abre a mesa. O mínimo é o big blind (padrão `0.10`); o small blind é a metade, arredondada para baixo.
-- **`.poker entrar <nome> <buy-in>`**: o nome é uma palavra de até 20 caracteres, único na mesa; o buy-in vai de 1 a 200 vezes o mínimo da mesa (com o mínimo padrão de R$ 0,10: de R$ 0,10 a R$ 20,00).
+- **`.poker entrar <nome> <buy-in>`**: o nome é uma palavra de até 20 caracteres, único na mesa; o buy-in vai de 10 a 200 vezes o mínimo da mesa (com o mínimo padrão de R$ 0,10: de R$ 1,00 a R$ 20,00; com `.poker abrir 10`: de R$ 100,00 a R$ 2000,00).
 - **`.poker iniciar`**: distribui as cartas e começa a mão (2 a 10 jogadores).
 - **`.poker check`**: passa a vez sem apostar; só quando não há aposta para pagar.
 - **`.poker call`**: paga a aposta atual; se faltar ficha, vira all-in.
