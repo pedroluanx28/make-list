@@ -1,6 +1,6 @@
-import { PREFIX } from "../config";
+import { PREFIXES } from "../config";
 
-const verifyPrefix = (prefix) => PREFIX === prefix;
+const verifyPrefix = (prefix) => PREFIXES.includes(prefix);
 const hasTypeOrCommand = ({ type, command }) => {
     return type && command;
 }

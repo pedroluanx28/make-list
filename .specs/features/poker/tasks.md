@@ -36,7 +36,7 @@ T1 → T2 → T3 → T4 → T5 → T6
 
 ## Task Breakdown
 
-### T1: Prefixos `/` e `.` [ ]
+### T1: Prefixos `/` e `.` [x]
 **Where**: `src/config.ts`, `src/middlewares/index.ts`, `src/utils/index.ts` · **Requirement**: POKER-11 · **Tests**: unit · **Gate**: build
 **Commit**: `feat(prefixo): aceita "." além de "/" nos comandos`
 
