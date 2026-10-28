@@ -162,6 +162,9 @@ describe('poker command', () => {
       ['admin', { participants: [{ id: jid(9), admin: 'admin' }] }],
       ['superadmin', { participants: [{ id: jid(9), admin: 'superadmin' }] }],
       ['owner', { participants: [], owner: jid(9) }],
+      ['owner listed by phone number', { participants: [], owner: '123@lid', ownerJid: jid(9) }],
+      ['admin listed by LID with the phone number in jid', { participants: [{ id: '123@lid', jid: jid(9), admin: 'admin' }] }],
+      ['admin listed by phone number with the LID in lid', { participants: [{ id: '55@s.whatsapp.net', lid: jid(9), admin: 'admin' }] }],
     ])('should let a group %s start the table', async (_label, metadata) => {
       seatPlayers([100, 100]);
       socket.groupMetadata.mockResolvedValue(metadata);

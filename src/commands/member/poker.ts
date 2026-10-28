@@ -71,10 +71,13 @@ const requireTable = (chatId: string): PokerTable => {
     return table;
 };
 
+// The sender may come as a phone number JID or as a LID; group metadata can list either form
 const isGroupAdmin = async (socket: any, chatId: string, userJid: string) => {
-    const { participants, owner } = await socket.groupMetadata(chatId);
-    const participant = participants.find((participant) => participant.id === userJid);
-    return owner === userJid || participant?.admin === "admin" || participant?.admin === "superadmin";
+    const { participants, owner, ownerJid } = await socket.groupMetadata(chatId);
+    const participant = participants.find((participant) =>
+        [participant.id, participant.lid, participant.jid].includes(userJid)
+    );
+    return [owner, ownerJid].includes(userJid) || participant?.admin === "admin" || participant?.admin === "superadmin";
 };
 
 const requireManager = async (socket: any, table: PokerTable, userJid: string, action: string) => {
