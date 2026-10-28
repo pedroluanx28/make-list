@@ -32,6 +32,8 @@ export const connect = async () => {
         },
         markOnlineOnConnect: true,
         shouldIgnoreJid: (jid) => {
+            // Some receipts arrive without a JID
+            if (!jid) return false;
             if (jid.includes('status@broadcast')) return true;
             if (jid.includes('@g.us') && jid.includes('announce')) return true;
             return false;
