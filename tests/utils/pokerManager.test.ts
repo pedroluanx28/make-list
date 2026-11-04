@@ -456,6 +456,18 @@ describe('pokerManager', () => {
       expect(table.players[0].bet).toBe(60);
     });
 
+    it('should let who has not acted yet raise after a short all-in', () => {
+      const table = setupTable([100, 100, 100]);
+      table.players[1].chips = 40;
+      startHand(table, fillerDeal(3));
+      act(table, 0, 'raise', 30); // a raise of 20: the next full raise must add 20 more
+      act(table, 1, 'allin'); // to 40: a raise of only 10
+
+      act(table, 2, 'raise', 60);
+
+      expect(table.hand!.currentBet).toBe(60);
+    });
+
     it('should open the flop with three board cards and the first active player left of the button', () => {
       const table = setupTable([100, 100, 100]);
       const cards = fillerDeal(3);
