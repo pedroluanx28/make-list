@@ -51,7 +51,7 @@ const HELP = [
     "*Na sua vez*",
     `${POKER} check → passar a vez sem apostar (só quando não há aposta para pagar)`,
     `${POKER} call → pagar a aposta atual`,
-    `${POKER} raise [valor] → aumentar a aposta para [valor] (sem valor: o dobro da aposta atual)`,
+    `${POKER} raise [valor] → aumentar a aposta para [valor] (sem valor: o dobro da aposta atual, ou o mínimo se o dobro não chegar a ele)`,
     `${POKER} fold → desistir da mão`,
     `${POKER} allin → apostar todas as suas fichas`,
     "",

@@ -66,7 +66,7 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 - **`.poker iniciar`**: distribui as cartas e começa a mão (2 a 10 jogadores).
 - **`.poker check`**: passa a vez sem apostar; só quando não há aposta para pagar.
 - **`.poker call`**: paga a aposta atual; se faltar ficha, vira all-in.
-- **`.poker raise [valor]`**: aumenta a sua aposta na rodada **para** `[valor]`. Sem valor, dobra a aposta atual. Quando ninguém apostou, abre a aposta (padrão: o mínimo da mesa).
+- **`.poker raise [valor]`**: aumenta a sua aposta na rodada **para** `[valor]`. Sem valor, dobra a aposta atual; se o dobro ficar abaixo do raise mínimo (depois de um all-in curto), aumenta para o mínimo. Quando ninguém apostou, abre a aposta (padrão: o mínimo da mesa).
 - **`.poker fold`**: desiste da mão.
 - **`.poker allin`**: aposta todas as suas fichas.
 - **`.poker saldo`**: responde a quem digitou com as suas fichas, o buy-in e o saldo. Durante uma mão, mostra também quanto você já colocou no pote, que entra no saldo.

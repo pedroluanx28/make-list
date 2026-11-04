@@ -624,6 +624,36 @@ describe('pokerManager', () => {
     });
   });
 
+  describe('default raise below the minimum', () => {
+    // p1 opens the flop all-in with only 0.05: the double (0.10) does not reach the minimum raise (0.15)
+    const shortAllInOnTheFlop = () => {
+      const table = setupTable([100, 100, 100]);
+      table.players[1].chips = 15;
+      startHand(table, fillerDeal(3));
+      act(table, 0, 'call');
+      act(table, 1, 'call');
+      act(table, 2, 'check');
+      act(table, 1, 'allin');
+      return table;
+    };
+
+    it('should raise to the minimum when raise has no value', () => {
+      const table = shortAllInOnTheFlop();
+
+      act(table, 2, 'raise');
+
+      expect(table.hand!.currentBet).toBe(15);
+    });
+
+    it('should announce the minimum as the default', () => {
+      const table = shortAllInOnTheFlop();
+
+      expect(getOptions(table)).toContain(
+        'raise [valor] → aumentar a aposta para [valor] (padrão: o mínimo, R$ 0,15)'
+      );
+    });
+  });
+
   describe('getOptions', () => {
     it('should offer call, raise with the doubled default, fold and all-in when there is a bet', () => {
       const table = setupTable([100, 100, 100]);

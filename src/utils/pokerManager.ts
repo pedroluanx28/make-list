@@ -327,9 +327,13 @@ const minimumRaiseTo = (table: PokerTable) => {
     return hand.currentBet === 0 ? table.minimum : hand.currentBet + hand.minRaise;
 };
 
+// After a short all-in the double can fall below the minimum raise
+const doubleIsBelowMinimum = (table: PokerTable) => table.hand!.currentBet * 2 < minimumRaiseTo(table);
+
 const defaultRaiseTo = (table: PokerTable) => {
     const hand = table.hand!;
-    return hand.currentBet === 0 ? table.minimum : hand.currentBet * 2;
+    if (hand.currentBet === 0) return table.minimum;
+    return doubleIsBelowMinimum(table) ? minimumRaiseTo(table) : hand.currentBet * 2;
 };
 
 const raiseTo = (table: PokerTable, player: PokerPlayer, total: number) => {
@@ -584,11 +588,13 @@ export const getOptions = (table: PokerTable): string[] => {
     }
 
     if (player.mayRaise && maxTotal > minimumRaiseTo(table)) {
-        options.push(
-            hand.currentBet === 0
-                ? `raise [valor] → apostar (padrão: ${formatPrice(defaultRaiseTo(table))})`
-                : `raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, ${formatPrice(defaultRaiseTo(table))}; mínimo ${formatPrice(minimumRaiseTo(table))})`
-        );
+        let raise = `raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, ${formatPrice(defaultRaiseTo(table))}; mínimo ${formatPrice(minimumRaiseTo(table))})`;
+        if (hand.currentBet === 0) {
+            raise = `raise [valor] → apostar (padrão: ${formatPrice(defaultRaiseTo(table))})`;
+        } else if (doubleIsBelowMinimum(table)) {
+            raise = `raise [valor] → aumentar a aposta para [valor] (padrão: o mínimo, ${formatPrice(defaultRaiseTo(table))})`;
+        }
+        options.push(raise);
     }
 
     options.push("fold → desistir da mão");

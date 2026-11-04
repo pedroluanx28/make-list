@@ -2,6 +2,7 @@
 
 **Approved**: 2026-10-28 - user: "certo, entao pode dale"
 **Approved** (alteração POKER-19, achado da verificação): 2026-11-04 - user: "devolver ao p0" (a aposta que ninguém pagou volta para quem apostou); `.poker saldo` de quem saiu: user: "sim" (recusar)
+**Approved** (alteração POKER-20, achado da verificação): 2026-11-04 - user: "Usar o mínimo quando o dobro não alcança"
 **Approved** (alteração POKER-16..18): 2026-10-28 - user: "sim" (aos padrões apresentados: aviso com 10 s, 30 s novos após reinício, sair antes do início sem resultado, mesa encerra com menos de 2 jogadores)
 **Approved** (alteração POKER-14, buy-in mínimo): 2026-10-28 - user: "o minimo de buy in deve ser valor inicial da mesa x 10"
 **Approved** (alteração POKER-13..15): 2026-10-28 - user: "melhorias: deixar todas as cartas visiveis nas proximas mensagens (flop, turn e river); criar comando "poker saldo" para mostrar o saldo atual do jogador que digitou; Limitar o buy in (ele pode pegar de buy in inciial ate 200 vezes o valor da aposta minima definida no comando de iniciar)"
@@ -200,6 +201,13 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 1. WHEN uma mão termina e um jogador pôs no pote mais do que qualquer outro jogador ainda na mão pode cobrir THEN a parte que ninguém pagou SHALL voltar para esse jogador, mesmo que ele tenha desistido ou saído da mesa.
 2. The bot SHALL manter o total de fichas da mesa igual antes e depois de cada mão.
 
+### P1: Raise padrão abaixo do mínimo
+
+**Acceptance Criteria**:
+
+1. IF o dobro da aposta atual é menor que o raise mínimo (depois de um all-in curto) THEN `.poker raise` sem valor SHALL aumentar para o raise mínimo.
+2. IF o dobro da aposta atual é menor que o raise mínimo THEN a linha de opções do raise SHALL anunciar `padrão: o mínimo, <valor>`.
+
 ### P2: Ajuda
 
 **Acceptance Criteria**:
@@ -250,8 +258,9 @@ Os itens marcados `n` foram apresentados ao usuário para revisão em 2026-10-28
 | POKER-17 | Tempo limite: AC 3, 7 (time bank) | Specify | Pending |
 | POKER-18 | Sair da mesa: AC 1-8 | Specify | Pending |
 | POKER-19 | Aposta não paga: AC 1-2 | Verify | Pending |
+| POKER-20 | Raise padrão abaixo do mínimo: AC 1-2 | Verify | Pending |
 
-**Coverage:** 19 total, 19 mapped, 0 unmapped
+**Coverage:** 20 total, 20 mapped, 0 unmapped
 
 ---
 
