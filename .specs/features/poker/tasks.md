@@ -2,7 +2,7 @@
 
 **Design**: `.specs/features/poker/design.md`
 **Status**: In Progress
-**Approved**: não apresentado para revisão; o user mandou implementar direto - user: "certo, pode começar a codar!" (2026-10-28)
+**Approved**: 2026-10-28 - user: "certo, pode começar a codar!" (as tarefas não foram apresentadas para revisão; o user mandou implementar direto)
 **Mutations**: 3
 **Build**: `npm run build; npm test`
 **Run engine**: `npx jest tests/utils/pokerManager.test.ts tests/utils/pokerHand.test.ts tests/utils/pokerClock.test.ts tests/utils/deckOfCards.test.ts --reporters=default --verbose`
