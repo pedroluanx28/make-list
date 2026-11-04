@@ -661,6 +661,22 @@ describe('poker command', () => {
       });
     });
 
+    it('should play the hand out and deal the next one when the exit leaves only one player able to bet', async () => {
+      seatPlayers([100, 200, 200]);
+      deck = ['AS', 'AH', 'KS', 'KH', '2C', '7D', 'QD', 'JC', '9H', '5C', '3S', ...FILLER];
+      await run('iniciar');
+      await run('allin', 0);
+      await run('call', 1);
+      await run('call', 2);
+
+      await run('sair', 2);
+
+      expect(groupTexts().some((text) => text.includes('*Showdown!*'))).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(getTable(GROUP)!.handNumber).toBe(2);
+      expect(getTable(GROUP)!.hand).not.toBeNull();
+    });
+
     it('should end the table with everyone in the summary when only one player is left', async () => {
       seatPlayers([100, 100]);
       await run('iniciar');

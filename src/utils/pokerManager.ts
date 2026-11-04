@@ -439,6 +439,12 @@ const NEXT_STREET: Record<Exclude<Street, "river">, Exclude<Street, "preflop">> 
     turn: "river",
 };
 
+// At most one player can still bet and nobody owes a call: the rest of the board is revealed without betting
+const isBettingOver = (table: PokerTable) => {
+    const actors = table.players.filter(canAct);
+    return actors.length <= 1 && actors.every((player) => player.bet >= table.hand!.currentBet);
+};
+
 // Moves the hand forward until someone has to act or the hand ends
 const proceed = (table: PokerTable): PokerEvent[] => {
     const hand = table.hand!;
@@ -450,10 +456,7 @@ const proceed = (table: PokerTable): PokerEvent[] => {
             return [...events, winByFold(table, active[0])];
         }
 
-        const actors = active.filter((player) => !player.allIn);
-        const bettingOver = actors.length <= 1 && actors.every((player) => player.bet >= hand.currentBet);
-
-        if (!bettingOver) {
+        if (!isBettingOver(table)) {
             const next = nextSeat(
                 table,
                 hand.current,
@@ -640,8 +643,8 @@ export const leaveTable = (table: PokerTable, jid: string): PokerEvent[] => {
             player.folded = true;
             events = [{ type: "action", jid, action: "fold", total: player.bet, allIn: false }];
             const active = table.players.filter(isActive);
-            if (active.length === 1) {
-                events.push(winByFold(table, active[0]));
+            if (active.length === 1 || isBettingOver(table)) {
+                events.push(...proceed(table));
             }
         }
     }

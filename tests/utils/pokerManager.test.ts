@@ -547,6 +547,23 @@ describe('pokerManager', () => {
       expect(table.players.map((player) => player.chips)).toEqual([200, 0]);
     });
 
+    it('should reveal the remaining board without a new turn when the only player left to bet calls an all-in', () => {
+      const table = setupTable([100, 200]);
+      const cards = deal([['AS', 'AH'], ['KS', 'KH']], ['2C', '7D', '9H', 'JC', '3S']);
+      startHand(table, cards);
+      act(table, 0, 'allin');
+
+      const events = act(table, 1, 'call');
+
+      expect(events.some((event) => event.type === 'turn')).toBe(false);
+      expect(events.filter((event) => event.type === 'street').map((event: any) => event.street)).toEqual([
+        'flop',
+        'turn',
+        'river',
+      ]);
+      expect(table.players.map((player) => player.chips)).toEqual([200, 100]);
+    });
+
     it('should split side pots so a short all-in only wins the main pot', () => {
       const table = setupTable([100, 100, 100]);
       table.players[1].chips = 30;
@@ -729,6 +746,26 @@ describe('pokerManager', () => {
 
       expect(table.players[1].chips).toBe(95);
       expect(potTotal(table)).toBe(25);
+    });
+
+    it('should reveal the rest of the board when the exit leaves only one player able to bet', () => {
+      const table = setupTable([100, 200, 200]);
+      const cards = deal([['AS', 'AH'], ['KS', 'KH'], ['2C', '7D']], ['QD', 'JC', '9H', '5C', '3S']);
+      startHand(table, cards);
+      act(table, 0, 'allin');
+      act(table, 1, 'call');
+      act(table, 2, 'call');
+      expect(table.hand!.street).toBe('flop');
+
+      const events = leaveTable(table, jid(2));
+
+      expect(events.filter((event) => event.type === 'street').map((event: any) => event.street)).toEqual(['turn', 'river']);
+      expect(events.some((event) => event.type === 'turn')).toBe(false);
+      expect(events[events.length - 1]).toMatchObject({
+        type: 'showdown',
+        pots: [{ amount: 300, winners: [jid(0)] }],
+      });
+      expect(table.hand).toBeNull();
     });
 
     it('should keep the turn with the player to act when someone else leaves', () => {

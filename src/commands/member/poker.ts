@@ -444,7 +444,7 @@ const leave = async ({ socket, remoteJid, userJid, sendReply }: CommonFunctions)
 
     if (table.hand) return;
 
-    if (events.some((event) => event.type === "foldWin")) {
+    if (events.some((event) => event.type === "foldWin" || event.type === "showdown")) {
         await afterHand(socket, table);
     } else if (playersWithChips(table).length < MIN_PLAYERS) {
         await finish(socket, table, "Não há jogadores suficientes para continuar.");
