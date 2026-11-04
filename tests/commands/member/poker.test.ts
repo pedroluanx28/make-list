@@ -468,6 +468,19 @@ describe('poker command', () => {
       expect(getTable(GROUP)!.hand!.current).toBe(0);
     });
 
+    it('should show the extensions left when the player gets the turn again', async () => {
+      seatPlayers([100, 100]);
+      await run('iniciar');
+      await jest.advanceTimersByTimeAsync(30000);
+      await run('call', 0);
+      await run('check', 1);
+
+      await run('check', 1);
+
+      expect(lastGroupMessage().text).toContain(`${tag(0)}, é sua vez!`);
+      expect(lastGroupMessage().text).toContain('⏱️ 30s para jogar · time bank: 2 × 30s');
+    });
+
     it('should warn again 10 seconds before an extension ends', async () => {
       seatPlayers([100, 100, 100]);
       await run('iniciar');
@@ -582,8 +595,14 @@ describe('poker command', () => {
       saveTable(table);
 
       resumePokerClocks();
-      await jest.advanceTimersByTimeAsync(30000);
 
+      await jest.advanceTimersByTimeAsync(19999);
+      expect(socket.sendMessage).not.toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(1);
+      expect(lastGroupMessage().text).toBe(`🤖 ⏱️ ${tag(0)}, faltam 10 segundos para você jogar!`);
+      await jest.advanceTimersByTimeAsync(9999);
+      expect(socket.sendMessage).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(1);
       expect(lastGroupMessage().text).toBe(`🤖 ⏳ ${tag(0)}, seu tempo acabou: usei 1 time bank (+30s). Restam 2.`);
     });
   });
