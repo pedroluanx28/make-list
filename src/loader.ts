@@ -1,8 +1,11 @@
 import { TIMEOUT_BY_EVENT } from "./config";
 import { onMessagesUpsert } from "./middlewares/onMessagesUpsert";
-import { initializeReminders } from "./utils/reminderManager";
+import { setActiveSocket } from "./utils/activeSocket";
 
-export const load = (socket) => {
+// Runs for every socket, including the ones created when the connection drops and reconnects
+export const listenToMessages = (socket) => {
+    setActiveSocket(socket);
+
     socket.ev.on("messages.upsert", ({ messages, type }) => {
         // Só processar mensagens novas (não antigas)
         if (type === 'notify') {
@@ -11,7 +14,4 @@ export const load = (socket) => {
             }, TIMEOUT_BY_EVENT) //Prevenir ban do WhatsApp
         }
     })
-
-    // Inicializar lembretes pendentes
-    initializeReminders(socket);
 }

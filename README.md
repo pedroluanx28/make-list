@@ -10,6 +10,7 @@ Bot para WhatsApp desenvolvido em TypeScript que oferece comandos úteis para or
 - ✅ **Menção em massa** para comunicados importantes
 - ✅ **Pedidos por enquete** com cardápio configurável e resumo de totais
 - ✅ **Lembretes** persistentes, que sobrevivem a reinicializações
+- ✅ **Poker (Texas Hold'em)** com cartas no privado, side pots e resumo final
 - ✅ **Testes unitários** com 100% de cobertura nos comandos
 - ✅ **TypeScript** para maior confiabilidade
 
@@ -25,11 +26,12 @@ Bot para WhatsApp desenvolvido em TypeScript que oferece comandos úteis para or
 | `/pedido` | `pedido`, `lidineide` | membro | Abre uma enquete de pedido com o cardápio |
 | `/pedido-encerrar` | `pedido-encerrar`, `lidineide-encerrar` | membro | Encerra o pedido ativo e envia o resumo |
 | `/cardapio` | `cardapio`, `produtos` | admin | Lista e edita os itens do cardápio do pedido |
+| `.poker` | `poker` | membro | Mesa de Texas Hold'em com cartas no privado (`.poker ajuda`) |
 | `/lembrete` | `lembrete`, `reminder`, `lembrar` | membro | Cria um lembrete (`30min`, `2h`, `1d`, `1w`) |
 | `/lembretes` | `lembretes`, `reminders`, `listarlembretes` | membro | Lista seus lembretes ativos |
 | `/deletarlembrete` | `deletarlembrete`, `deletereminder`, `removerlembrete` | membro | Remove um lembrete pelo ID |
 
-Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
+Os comandos aceitam os prefixos `/` e `.`. Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
 
 ## Instalação e Execução
 

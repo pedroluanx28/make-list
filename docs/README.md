@@ -40,6 +40,12 @@ Este é o índice geral da documentação de todos os comandos disponíveis no b
 
 ---
 
+### 🃏 [Poker](./poker.md)
+**Comando:** `poker` (ex.: `.poker abrir`, `.poker entrar`, `.poker iniciar`)  
+**Descrição:** Conduz uma mesa de Texas Hold'em no grupo: cartas no privado de cada jogador, apostas, side pots e resumo final com o saldo de cada um.
+
+---
+
 ### 🏓 [Ping](./ping.md)
 **Comando:** `ping`  
 **Descrição:** Verifica a conectividade e responsividade do bot, confirmando que está online e funcionando.
@@ -66,7 +72,7 @@ Cada comando possui documentação seguindo esta estrutura padronizada:
 
 ## Como Usar os Comandos
 
-1. **Prefixo**: Todos os comandos devem ser precedidos pelo prefixo configurado (geralmente `/`)
+1. **Prefixo**: Todos os comandos devem ser precedidos por `/` ou `.`
 2. **Grupos vs Privado**: Alguns comandos funcionam apenas em grupos (como `markall`)
 3. **Parâmetros**: Comandos que aceitam parâmetros têm formatos específicos documentados
 4. **Ajuda**: Alguns comandos oferecem ajuda interna (ex: `--help`)

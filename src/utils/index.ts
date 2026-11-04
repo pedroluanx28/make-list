@@ -1,5 +1,5 @@
 import readline from "readline";
-import { PREFIX, COMMANDS_DIR } from "../config";
+import { PREFIXES, COMMANDS_DIR } from "../config";
 import fs from "fs";
 import path from "path";
 
@@ -61,7 +61,7 @@ const extractDataFromMessage = (webMessage) => {
     const prefix = command.charAt(0);
 
     const commandWithoutPrefix = command.replace(
-        new RegExp(`^[${PREFIX}]+`),
+        new RegExp(`^[${PREFIXES.map((prefix) => `\\${prefix}`).join("")}]+`),
         ""
     );
 
