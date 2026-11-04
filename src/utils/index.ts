@@ -60,10 +60,13 @@ const extractDataFromMessage = (webMessage) => {
     const [command, ...args] = message.split(" ");
     const prefix = command.charAt(0);
 
-    const commandWithoutPrefix = command.replace(
-        new RegExp(`^[${PREFIXES.map((prefix) => `\\${prefix}`).join("")}]+`),
-        ""
-    );
+    // "..." and "...ok" are common in chat: "." only works as a prefix when it is a single dot
+    const commandWithoutPrefix = command.startsWith("..")
+        ? ""
+        : command.replace(
+            new RegExp(`^[${PREFIXES.map((prefix) => `\\${prefix}`).join("")}]+`),
+            ""
+        );
 
     return {
         args: splitByCharacters(args.join(" "), ["\\", "|", "/"]),
@@ -139,7 +142,8 @@ const COMMAND_MATCHERS = [
     (alias: string, input: string) => alias.includes(input),
 ];
 
-const findCommandImport = (commandName) => {
+// exactOnly: only an exact alias counts, so a short word typed in chat doesn't run a command
+const findCommandImport = (commandName, exactOnly = false) => {
     const input = formatCommand(commandName);
     if (!input) {
         return { type: "", command: null };
@@ -149,7 +153,7 @@ const findCommandImport = (commandName) => {
         ([a], [b]) => COMMAND_TYPE_PRIORITY.indexOf(a) - COMMAND_TYPE_PRIORITY.indexOf(b)
     );
 
-    for (const matches of COMMAND_MATCHERS) {
+    for (const matches of exactOnly ? COMMAND_MATCHERS.slice(0, 1) : COMMAND_MATCHERS) {
         for (const [type, modules] of commandsByType) {
             for (const module of modules as any[]) {
                 const command = Object.values(module)[0] as Command;
