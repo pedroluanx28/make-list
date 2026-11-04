@@ -774,6 +774,25 @@ describe('pokerManager', () => {
       expect(playersWithChips(table).map((player) => player.name)).toEqual(['p0', 'p2']);
     });
 
+    it('should give back to who left the part of the bet nobody still in the hand could cover', () => {
+      const table = setupTable([300, 100, 150]);
+      table.players[1].chips = 60;
+      const cards = deal([['KS', 'KH'], ['2C', '7D'], ['AS', 'AH']], ['AD', 'KD', '9C', '5S', '3H']);
+      startHand(table, cards);
+      act(table, 0, 'raise', 200);
+      act(table, 1, 'allin');
+      leaveTable(table, jid(0));
+
+      const events = act(table, 2, 'call');
+
+      const showdown = events[events.length - 1] as any;
+      expect(showdown.pots).toEqual([
+        { amount: 180, winners: [jid(2)] },
+        { amount: 180, winners: [jid(2)] },
+      ]);
+      expect(table.players.map((player) => player.chips)).toEqual([150, 0, 360]);
+    });
+
     it('should list who left in the summary with their result', () => {
       const table = setupTable([100, 100, 100]);
       startHand(table, fillerDeal(3));

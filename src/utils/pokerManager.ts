@@ -519,9 +519,21 @@ const buildPots = (table: PokerTable) => {
     });
 };
 
+// What a folded player bet above anything the players still in can cover was never called: it goes back to them
+const returnUncalledBets = (table: PokerTable, contenders: PokerPlayer[]) => {
+    const covered = Math.max(...contenders.map((player) => player.committed));
+    for (const player of table.players) {
+        if (player.committed > covered) {
+            player.chips += player.committed - covered;
+            player.committed = covered;
+        }
+    }
+};
+
 const showdown = (table: PokerTable): PokerEvent => {
     const board = table.hand!.board;
     const contenders = table.players.filter(isActive);
+    returnUncalledBets(table, contenders);
     const values = new Map(contenders.map((player) => [player, evaluateHand([...player.cards, ...board])]));
     // Odd chips go to the first winner left of the button
     const seatOrder = (player: PokerPlayer) =>
