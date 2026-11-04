@@ -279,7 +279,7 @@ Proof: run saldo | ✓ should show what is in the pot and count it in the balanc
 Proof: run saldo | ✓ should refuse someone who is not at the table
 
 **C52** - A marcação da vez informa 30 s e as extensões restantes (POKER-16, AC 1)
-Proof: run command | ✓ should announce the action and tag the next player with their options
+Proof: run command | ✓ should show the extensions left when the player gets the turn again
 
 **C53** - Faltando 10 s, o jogador da vez é marcado (POKER-16, AC 2)
 Proof: run command | ✓ should tag the player when 10 seconds are left
@@ -358,6 +358,24 @@ Proof: run engine | ✓ should read 0,5 as 50 cents
 
 **C78** - No privado, subcomandos que não são ajuda são recusados (POKER-12)
 Proof: run command | ✓ should refuse any other subcommand in a private chat
+
+**C79** - Quem saiu fora da vez recebe de volta o que apostou acima do que os jogadores ainda na mão cobrem, e nenhuma ficha some (POKER-19, AC 1-2)
+Proof: run engine | ✓ should give back to who left the part of the bet nobody still in the hand could cover
+
+**C80** - Quando a saída deixa um só jogador que pode apostar, o resto da mesa é revelado sem nova vez (POKER-06, AC 7)
+Proof: run engine | ✓ should reveal the rest of the board when the exit leaves only one player able to bet
+
+**C81** - Depois do showdown causado por uma saída, a próxima mão é distribuída (POKER-18, AC 2; POKER-08, AC 3)
+Proof: run sair | ✓ should play the hand out and deal the next one when the exit leaves only one player able to bet
+
+**C82** - Quando o único que pode apostar paga um all-in menor, o resto da mesa é revelado sem nova vez (POKER-06, AC 7)
+Proof: run engine | ✓ should reveal the remaining board without a new turn when the only player left to bet calls an all-in
+
+**C83** - Quem ainda não agiu pode aumentar depois de um all-in curto (POKER-05, AC 3)
+Proof: run engine | ✓ should let who has not acted yet raise after a short all-in
+
+**C84** - `.poker saldo` de quem já saiu da mesa é recusado (POKER-15, AC 7)
+Proof: run saldo | ✓ should refuse someone who already left the table
 
 ---
 
