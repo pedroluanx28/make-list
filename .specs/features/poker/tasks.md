@@ -377,6 +377,12 @@ Proof: run engine | ✓ should let who has not acted yet raise after a short all
 **C84** - `.poker saldo` de quem já saiu da mesa é recusado (POKER-15, AC 7)
 Proof: run saldo | ✓ should refuse someone who already left the table
 
+**C85** - Quando o dobro fica abaixo do raise mínimo, `raise` sem valor aumenta para o mínimo (POKER-20, AC 1)
+Proof: run engine | ✓ should raise to the minimum when raise has no value
+
+**C86** - Quando o dobro fica abaixo do raise mínimo, as opções anunciam `padrão: o mínimo, R$ 0,15` (POKER-20, AC 2)
+Proof: run engine | ✓ should announce the minimum as the default
+
 ---
 
 ## Handoff
