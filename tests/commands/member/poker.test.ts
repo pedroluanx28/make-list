@@ -753,6 +753,14 @@ describe('poker command', () => {
       await expect(run('saldo', 9)).rejects.toThrow('Você não está na mesa.');
     });
 
+    it('should refuse someone who already left the table', async () => {
+      seatPlayers([100, 100, 100]);
+      await run('iniciar');
+      await run('sair', 2);
+
+      await expect(run('saldo', 2)).rejects.toThrow('Você não está na mesa.');
+    });
+
     it('should reply with the chips, buy-in and balance of who asked', async () => {
       const table = seatPlayers([100, 200]);
       table.players[1].chips = 260;

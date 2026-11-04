@@ -375,7 +375,7 @@ const join = async ({ remoteJid, userJid, sendReply }: CommonFunctions, args: st
 // Chips already in the pot are not lost until the hand ends, so they count in the balance
 const balance = async ({ remoteJid, userJid, sendReply }: CommonFunctions) => {
     const table = requireTable(remoteJid);
-    const player = table.players.find((seated) => seated.jid === userJid);
+    const player = table.players.find((seated) => seated.jid === userJid && !seated.left);
     if (!player) {
         throw new WarningError("Você não está na mesa.");
     }
