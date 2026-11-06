@@ -10,6 +10,14 @@
 - **Date**: 2026-10-28
 - **Status**: active
 
+### AD-002
+- **Decision**: Com o prefixo `.`, só o alias exato aciona um comando, e uma mensagem que começa com `..` não tem comando. Com `/` a busca aproximada continua.
+- **Reason**: A verificação do poker mostrou que `.a` mencionava o grupo todo (`/markAll`), `.ok` abria a ajuda do poker e `...e` caía no `/deletarlembrete`; o user aprovou "aceitar só um ponto seguido de letra e só o alias exato".
+- **Trade-off**: Abreviações como `.p` deixam de funcionar; quem quiser abreviar usa `/`.
+- **Scope**: `src/utils/index.ts` (`extractDataFromMessage`, `findCommandImport`), `src/utils/dynamicCommand.ts`; todas as features. Refina o AD-001.
+- **Date**: 2026-11-04
+- **Status**: active
+
 ## Handoff
 
 - **Feature**: poker (`.specs/features/poker/`)

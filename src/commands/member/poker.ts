@@ -1,6 +1,7 @@
 import { BOT_EMOJI } from "../../config";
 import { getActiveSocket } from "../../utils/activeSocket";
 import { DangerError, InvalidParameterError, WarningError } from "../../errors";
+import { isGroupAdmin } from "../../middlewares/checkPermission";
 import { cardImageUrl, drawCards } from "../../utils/deckOfCards";
 import { formatPrice } from "../../utils/menuManager";
 import { TURN_TIME_MS, startClock, stopClock } from "../../utils/pokerClock";
@@ -84,15 +85,6 @@ const requireTable = (chatId: string): PokerTable => {
         throw new WarningError(`Não há mesa aberta neste grupo. Use ${POKER} abrir.`);
     }
     return table;
-};
-
-// The sender may come as a phone number JID or as a LID; group metadata can list either form
-const isGroupAdmin = async (socket: any, chatId: string, userJid: string) => {
-    const { participants, owner, ownerJid } = await socket.groupMetadata(chatId);
-    const participant = participants.find((participant) =>
-        [participant.id, participant.lid, participant.jid].includes(userJid)
-    );
-    return [owner, ownerJid].includes(userJid) || participant?.admin === "admin" || participant?.admin === "superadmin";
 };
 
 const requireManager = async (socket: any, table: PokerTable, userJid: string, action: string) => {

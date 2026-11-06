@@ -72,7 +72,7 @@ Cada comando possui documentação seguindo esta estrutura padronizada:
 
 ## Como Usar os Comandos
 
-1. **Prefixo**: Todos os comandos devem ser precedidos por `/` ou `.`
+1. **Prefixo**: Todos os comandos devem ser precedidos por `/` ou `.`. Com `/`, o bot aceita abreviações (ex.: `/p` → `/pedido`); com `.`, só o nome exato do comando com um único ponto (`.poker` funciona; `.p`, `.ok` e `...` não acionam nada)
 2. **Grupos vs Privado**: Alguns comandos funcionam apenas em grupos (como `markall`)
 3. **Parâmetros**: Comandos que aceitam parâmetros têm formatos específicos documentados
 4. **Ajuda**: Alguns comandos oferecem ajuda interna (ex: `--help`)

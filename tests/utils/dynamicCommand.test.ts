@@ -39,7 +39,16 @@ describe('dynamicCommand', () => {
 
       await dynamicCommand(params);
 
-      expect(mockFindCommandImport).toHaveBeenCalledWith('ping');
+      expect(mockFindCommandImport).toHaveBeenCalledWith('ping', false);
+    });
+
+    it('should only accept the exact alias when the prefix is "."', async () => {
+      mockFindCommandImport.mockReturnValue({ type: 'member', command: createCommand() });
+      const params = createMockCommonFunctions({ commandName: 'ok', prefix: '.' });
+
+      await dynamicCommand(params);
+
+      expect(mockFindCommandImport).toHaveBeenCalledWith('ok', true);
     });
 
     it.each([

@@ -14,11 +14,18 @@ describe('extractDataFromMessage', () => {
     expect(data.fullArgs).toBe('entrar Pedro 50');
   });
 
-  it('should strip repeated prefixes before the command name', () => {
-    const data = extractDataFromMessage(textMessage('..ping'));
+  it('should strip repeated "/" before the command name', () => {
+    const data = extractDataFromMessage(textMessage('//ping'));
+
+    expect(data.prefix).toBe('/');
+    expect(data.commandName).toBe('ping');
+  });
+
+  it.each(['..ping', '...ok', '...e ai'])('should leave an empty command name for %p (more than one dot)', (text) => {
+    const data = extractDataFromMessage(textMessage(text));
 
     expect(data.prefix).toBe('.');
-    expect(data.commandName).toBe('ping');
+    expect(data.commandName).toBe('');
   });
 
   it('should keep the first character as prefix when the message has no known prefix', () => {

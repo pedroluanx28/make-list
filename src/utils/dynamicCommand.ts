@@ -6,7 +6,8 @@ import { findCommandImport } from ".";
 export const dynamicCommand = async (paramsHandler) => {
     const { commandName, prefix, sendWarningReply, sendErrorReply } = paramsHandler;
 
-    const { type, command } = findCommandImport(commandName);
+    // "." also starts ordinary chat messages (".ok", ".a"), so with it only an exact alias runs a command
+    const { type, command } = findCommandImport(commandName, prefix === ".");
 
     if (!verifyPrefix(prefix) || !hasTypeOrCommand({ type, command })) {
         return;

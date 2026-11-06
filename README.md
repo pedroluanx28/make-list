@@ -31,7 +31,7 @@ Bot para WhatsApp desenvolvido em TypeScript que oferece comandos úteis para or
 | `/lembretes` | `lembretes`, `reminders`, `listarlembretes` | membro | Lista seus lembretes ativos |
 | `/deletarlembrete` | `deletarlembrete`, `deletereminder`, `removerlembrete` | membro | Remove um lembrete pelo ID |
 
-Os comandos aceitam os prefixos `/` e `.`. Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
+Os comandos aceitam os prefixos `/` e `.`; com `.`, só o nome exato do comando funciona (abreviações só com `/`). Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
 
 ## Instalação e Execução
 

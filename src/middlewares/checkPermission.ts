@@ -1,3 +1,24 @@
+// The sender may come as a phone number JID or as a LID; group metadata can list either form
+export const getGroupRole = async (socket, groupJid: string, userJid: string) => {
+    const { participants, owner, ownerJid } = await socket.groupMetadata(groupJid);
+    const participant = participants.find((participant) =>
+        [participant.id, participant.lid, participant.jid].includes(userJid)
+    );
+
+    if (userJid && ([owner, ownerJid].includes(userJid) || participant?.admin === "superadmin")) {
+        return "owner";
+    }
+
+    if (participant?.admin === "admin") {
+        return "admin";
+    }
+
+    return participant ? "member" : null;
+};
+
+export const isGroupAdmin = async (socket, groupJid: string, userJid: string) =>
+    ["owner", "admin"].includes(await getGroupRole(socket, groupJid, userJid));
+
 export const checkPermission = async ({ type, socket, userJid, remoteJid }) => {
     if (type === "member") {
         return true;
@@ -8,22 +29,14 @@ export const checkPermission = async ({ type, socket, userJid, remoteJid }) => {
         return false;
     }
 
-    const { participants, owner } = await socket.groupMetadata(remoteJid);
-    const participant = participants.find((participant) => participant.id === userJid);
-
-    if (!participant) {
-        return false;
-    }
-
-    const isOwner = owner === userJid || participant.admin === "superadmin";
-    const isAdmin = participant.admin === "admin";
+    const role = await getGroupRole(socket, remoteJid, userJid);
 
     if (type === "admin") {
-        return isAdmin || isOwner;
+        return role === "admin" || role === "owner";
     }
 
     if (type === "owner") {
-        return isOwner;
+        return role === "owner";
     }
 
     return false;
