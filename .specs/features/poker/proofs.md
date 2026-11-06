@@ -1,9 +1,9 @@
 # poker proofs
 
-**HEAD**: 59b22dd
+**HEAD**: 0586b9a
 **Tree**: clean
 **Shell**: /bin/sh
-**Result**: 80 pass, 0 fail
+**Result**: 88 pass, 0 fail
 
 | Check | Proof | Result |
 | --- | --- | --- |
@@ -58,7 +58,7 @@
 | C49 | `run saldo / ✓ should reply with the chips, buy-in and balance of who asked` | pass |
 | C50 | `run saldo / ✓ should show what is in the pot and count it in the balance during a hand` | pass |
 | C51 | `run saldo / ✓ should refuse someone who is not at the table` | pass |
-| C52 | `run command / ✓ should announce the action and tag the next player with their options` | pass |
+| C52 | `run command / ✓ should show the extensions left when the player gets the turn again` | pass |
 | C53 | `run command / ✓ should tag the player when 10 seconds are left` | pass |
 | C54 | `run command / ✓ should warn again 10 seconds before an extension ends` | pass |
 | C55 | `run command / ✓ should spend a time bank extension when the time runs out and keep the turn` | pass |
@@ -85,6 +85,14 @@
 | C76 | `run engine / ✓ should put a short big blind all-in with what is left` | pass |
 | C77 | `run engine / ✓ should read 0,5 as 50 cents` | pass |
 | C78 | `run command / ✓ should refuse any other subcommand in a private chat` | pass |
+| C79 | `run engine / ✓ should give back to who left the part of the bet nobody still in the hand could cover` | pass |
+| C80 | `run engine / ✓ should reveal the rest of the board when the exit leaves only one player able to bet` | pass |
+| C81 | `run sair / ✓ should play the hand out and deal the next one when the exit leaves only one player able to bet` | pass |
+| C82 | `run engine / ✓ should reveal the remaining board without a new turn when the only player left to bet calls an ` | pass |
+| C83 | `run engine / ✓ should let who has not acted yet raise after a short all-in` | pass |
+| C84 | `run saldo / ✓ should refuse someone who already left the table` | pass |
+| C85 | `run engine / ✓ should raise to the minimum when raise has no value` | pass |
+| C86 | `run engine / ✓ should announce the minimum as the default` | pass |
 | Build | `npm run build` | pass |
 | Build | `npm test` | pass |
 
@@ -93,70 +101,70 @@
 `Run command` - exit 0
 
 ```
-      ✓ should refuse when there is no table (1 ms)
       ✓ should refuse someone who is not at the table (1 ms)
+      ✓ should refuse someone who already left the table (2 ms)
       ✓ should reply with the chips, buy-in and balance of who asked (1 ms)
       ✓ should show what is in the pot and count it in the balance during a hand (1 ms)
     acabar
-      ✓ should refuse when there is no table (2 ms)
+      ✓ should refuse when there is no table (1 ms)
       ✓ should refuse someone who is neither at the table nor an admin (1 ms)
-      ✓ should void the hand in progress, send the summary and delete the table (2 ms)
-      ✓ should let a group admin end a table before it starts (1 ms)
+      ✓ should void the hand in progress, send the summary and delete the table (1 ms)
+      ✓ should let a group admin end a table before it starts
 
 Test Suites: 1 passed, 1 total
-Tests:       71 passed, 71 total
+Tests:       74 passed, 74 total
 Snapshots:   0 total
-Time:        2.008 s, estimated 9 s
+Time:        2.462 s
 Ran all test suites matching tests/commands/member/poker.test.ts.
 ```
 
 `Run engine` - exit 0
 
 ```
-      ✓ should keep the turn with the player to act when someone else leaves (1 ms)
       ✓ should give the pot to the last active player when the one leaving was the other
-      ✓ should leave without folding when the player is not in the hand (1 ms)
+      ✓ should leave without folding when the player is not in the hand
       ✓ should not deal cards, give the button or count chips of who left
+      ✓ should give back to who left the part of the bet nobody still in the hand could cover (6 ms)
       ✓ should list who left in the summary with their result (1 ms)
-      ✓ should refuse a second exit of the same player
+      ✓ should refuse a second exit of the same player (1 ms)
     withTableLock
-      ✓ should run tasks of the same group one at a time (1 ms)
+      ✓ should run tasks of the same group one at a time
       ✓ should keep running tasks after one fails (1 ms)
 
 Test Suites: 4 passed, 4 total
-Tests:       119 passed, 119 total
+Tests:       125 passed, 125 total
 Snapshots:   0 total
-Time:        4.092 s, estimated 9 s
+Time:        3.974 s, estimated 12 s
 Ran all test suites matching tests/utils/pokerManager.test.ts|tests/utils/pokerHand.test.ts|tests/utils/pokerClock.test.ts|tests/utils/deckOfCards.test.ts.
 ```
 
 `Run acabar` - exit 0
 
 ```
-      ○ skipped should refuse when there is no table
       ○ skipped should refuse someone who is not at the table
+      ○ skipped should refuse someone who already left the table
       ○ skipped should reply with the chips, buy-in and balance of who asked
       ○ skipped should show what is in the pot and count it in the balance during a hand
     acabar
-      ✓ should refuse when there is no table (15 ms)
-      ✓ should refuse someone who is neither at the table nor an admin (2 ms)
-      ✓ should void the hand in progress, send the summary and delete the table (4 ms)
-      ✓ should let a group admin end a table before it starts (2 ms)
+      ✓ should refuse when there is no table (19 ms)
+      ✓ should refuse someone who is neither at the table nor an admin (4 ms)
+      ✓ should void the hand in progress, send the summary and delete the table (8 ms)
+      ✓ should let a group admin end a table before it starts (3 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       67 skipped, 4 passed, 71 total
+Tests:       70 skipped, 4 passed, 74 total
 Snapshots:   0 total
-Time:        1.759 s, estimated 2 s
+Time:        2.106 s, estimated 3 s
 Ran all test suites matching tests/commands/member/poker.test.ts with tests matching "poker command acabar".
 ```
 
 `Run saldo` - exit 0
 
 ```
-      ✓ should refuse when there is no table (16 ms)
-      ✓ should refuse someone who is not at the table (2 ms)
+      ✓ should refuse someone who is not at the table (3 ms)
+      ✓ should refuse someone who already left the table (5 ms)
       ✓ should reply with the chips, buy-in and balance of who asked (1 ms)
-      ✓ should show what is in the pot and count it in the balance during a hand (4 ms)
+      ✓ should show what is in the pot and count it in the balance during a hand (2 ms)
     acabar
       ○ skipped should refuse when there is no table
       ○ skipped should refuse someone who is neither at the table nor an admin
@@ -164,17 +172,17 @@ Ran all test suites matching tests/commands/member/poker.test.ts with tests matc
       ○ skipped should let a group admin end a table before it starts
 
 Test Suites: 1 passed, 1 total
-Tests:       67 skipped, 4 passed, 71 total
+Tests:       69 skipped, 5 passed, 74 total
 Snapshots:   0 total
-Time:        1.69 s, estimated 2 s
+Time:        5.116 s
 Ran all test suites matching tests/commands/member/poker.test.ts with tests matching "poker command saldo".
 ```
 
 `Run sair` - exit 0
 
 ```
-      ○ skipped should refuse when there is no table
       ○ skipped should refuse someone who is not at the table
+      ○ skipped should refuse someone who already left the table
       ○ skipped should reply with the chips, buy-in and balance of who asked
       ○ skipped should show what is in the pot and count it in the balance during a hand
     acabar
@@ -184,28 +192,28 @@ Ran all test suites matching tests/commands/member/poker.test.ts with tests matc
       ○ skipped should let a group admin end a table before it starts
 
 Test Suites: 1 passed, 1 total
-Tests:       59 skipped, 12 passed, 71 total
+Tests:       61 skipped, 13 passed, 74 total
 Snapshots:   0 total
-Time:        1.699 s, estimated 2 s
+Time:        2.043 s, estimated 5 s
 Ran all test suites matching tests/commands/member/poker.test.ts with tests matching "poker command sair".
 ```
 
 `Run prefix` - exit 0
 
 ```
+      ✓ should send a warning reply with the raw message for WarningError
+      ✓ should send an error reply with the raw message for DangerError (1 ms)
+      ✓ should send a generic error reply with details for a plain Error (1 ms)
+      ✓ should send a generic error reply with details for a plain TypeError (1 ms)
+      ✓ should report "undefined" details when a non-Error value is thrown (1 ms)
+      ✓ should crash inside the catch block when null is thrown (1 ms)
+      ✓ should return the result of sendWarningReply (1 ms)
+      ✓ should return the result of sendErrorReply
       ✓ should propagate a failure of the reply helper itself (1 ms)
-
-PASS tests/utils/extractDataFromMessage.test.ts
-  extractDataFromMessage
-    ✓ should read the command name and prefix when the message starts with "/" (5 ms)
-    ✓ should read the command name and prefix when the message starts with "."
-    ✓ should strip repeated prefixes before the command name (1 ms)
-    ✓ should keep the first character as prefix when the message has no known prefix (1 ms)
-    ✓ should leave an empty command name for a message made only of dots
 
 Test Suites: 2 passed, 2 total
 Tests:       40 passed, 40 total
 Snapshots:   0 total
-Time:        2.212 s, estimated 9 s
+Time:        2.881 s, estimated 12 s
 Ran all test suites matching tests/utils/dynamicCommand.test.ts|tests/utils/extractDataFromMessage.test.ts.
 ```
