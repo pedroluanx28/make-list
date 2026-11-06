@@ -327,9 +327,13 @@ const minimumRaiseTo = (table: PokerTable) => {
     return hand.currentBet === 0 ? table.minimum : hand.currentBet + hand.minRaise;
 };
 
+// After a short all-in the double can fall below the minimum raise
+const doubleIsBelowMinimum = (table: PokerTable) => table.hand!.currentBet * 2 < minimumRaiseTo(table);
+
 const defaultRaiseTo = (table: PokerTable) => {
     const hand = table.hand!;
-    return hand.currentBet === 0 ? table.minimum : hand.currentBet * 2;
+    if (hand.currentBet === 0) return table.minimum;
+    return doubleIsBelowMinimum(table) ? minimumRaiseTo(table) : hand.currentBet * 2;
 };
 
 const raiseTo = (table: PokerTable, player: PokerPlayer, total: number) => {
@@ -439,6 +443,12 @@ const NEXT_STREET: Record<Exclude<Street, "river">, Exclude<Street, "preflop">> 
     turn: "river",
 };
 
+// At most one player can still bet and nobody owes a call: the rest of the board is revealed without betting
+const isBettingOver = (table: PokerTable) => {
+    const actors = table.players.filter(canAct);
+    return actors.length <= 1 && actors.every((player) => player.bet >= table.hand!.currentBet);
+};
+
 // Moves the hand forward until someone has to act or the hand ends
 const proceed = (table: PokerTable): PokerEvent[] => {
     const hand = table.hand!;
@@ -450,10 +460,7 @@ const proceed = (table: PokerTable): PokerEvent[] => {
             return [...events, winByFold(table, active[0])];
         }
 
-        const actors = active.filter((player) => !player.allIn);
-        const bettingOver = actors.length <= 1 && actors.every((player) => player.bet >= hand.currentBet);
-
-        if (!bettingOver) {
+        if (!isBettingOver(table)) {
             const next = nextSeat(
                 table,
                 hand.current,
@@ -519,9 +526,21 @@ const buildPots = (table: PokerTable) => {
     });
 };
 
+// What a folded player bet above anything the players still in can cover was never called: it goes back to them
+const returnUncalledBets = (table: PokerTable, contenders: PokerPlayer[]) => {
+    const covered = Math.max(...contenders.map((player) => player.committed));
+    for (const player of table.players) {
+        if (player.committed > covered) {
+            player.chips += player.committed - covered;
+            player.committed = covered;
+        }
+    }
+};
+
 const showdown = (table: PokerTable): PokerEvent => {
     const board = table.hand!.board;
     const contenders = table.players.filter(isActive);
+    returnUncalledBets(table, contenders);
     const values = new Map(contenders.map((player) => [player, evaluateHand([...player.cards, ...board])]));
     // Odd chips go to the first winner left of the button
     const seatOrder = (player: PokerPlayer) =>
@@ -569,11 +588,13 @@ export const getOptions = (table: PokerTable): string[] => {
     }
 
     if (player.mayRaise && maxTotal > minimumRaiseTo(table)) {
-        options.push(
-            hand.currentBet === 0
-                ? `raise [valor] → apostar (padrão: ${formatPrice(defaultRaiseTo(table))})`
-                : `raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, ${formatPrice(defaultRaiseTo(table))}; mínimo ${formatPrice(minimumRaiseTo(table))})`
-        );
+        let raise = `raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, ${formatPrice(defaultRaiseTo(table))}; mínimo ${formatPrice(minimumRaiseTo(table))})`;
+        if (hand.currentBet === 0) {
+            raise = `raise [valor] → apostar (padrão: ${formatPrice(defaultRaiseTo(table))})`;
+        } else if (doubleIsBelowMinimum(table)) {
+            raise = `raise [valor] → aumentar a aposta para [valor] (padrão: o mínimo, ${formatPrice(defaultRaiseTo(table))})`;
+        }
+        options.push(raise);
     }
 
     options.push("fold → desistir da mão");
@@ -628,8 +649,8 @@ export const leaveTable = (table: PokerTable, jid: string): PokerEvent[] => {
             player.folded = true;
             events = [{ type: "action", jid, action: "fold", total: player.bet, allIn: false }];
             const active = table.players.filter(isActive);
-            if (active.length === 1) {
-                events.push(winByFold(table, active[0]));
+            if (active.length === 1 || isBettingOver(table)) {
+                events.push(...proceed(table));
             }
         }
     }

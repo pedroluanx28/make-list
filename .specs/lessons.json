@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 2,
+  "next_id": 7,
   "lessons": [
     {
       "id": "L-001",
@@ -22,6 +22,96 @@
       ],
       "created": "2026-10-23T23:19:19Z",
       "last_seen": "2026-10-23T23:19:19Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::in any chip moving engine add a test asserting the table chip total is unchanged after each hand path fold win showdown side pots a player leaving",
+      "text": "In any chip-moving engine, add a test asserting the table chip total is unchanged after each hand path (fold win, showdown, side pots, a player leaving)",
+      "signal": "ac_gap",
+      "scope": "poker-engine",
+      "status": "candidate",
+      "features": [
+        "poker"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "POKER-19 / verification.md achado 1 (poker-engine)"
+      ],
+      "created": "2026-11-04T21:58:20Z",
+      "last_seen": "2026-11-04T21:58:20Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::every action that can change who still has to act fold leave timeout must run the same advance the hand step as a normal action with a test per entry point",
+      "text": "Every action that can change who still has to act (fold, leave, timeout) must run the same advance-the-hand step as a normal action, with a test per entry point",
+      "signal": "ac_gap",
+      "scope": "poker-engine",
+      "status": "candidate",
+      "features": [
+        "poker"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "POKER-06 AC 7 / verification.md achado 2 (poker-engine)"
+      ],
+      "created": "2026-11-04T21:58:20Z",
+      "last_seen": "2026-11-04T21:58:20Z"
+    },
+    {
+      "id": "L-004",
+      "key": "weak_test::a test for a counter or a timer must use a value other than the initial one and check both sides of the boundary not only the default case",
+      "text": "A test for a counter or a timer must use a value other than the initial one and check both sides of the boundary, not only the default case",
+      "signal": "weak_test",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "poker"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C52, C60 / verification.md (tests)"
+      ],
+      "created": "2026-11-04T21:58:20Z",
+      "last_seen": "2026-11-04T21:58:20Z"
+    },
+    {
+      "id": "L-005",
+      "key": "spec_precision_gap::when a default value is derived e g double the bet state in the spec what happens when it falls below a separate minimum rule",
+      "text": "When a default value is derived (e.g. double the bet), state in the spec what happens when it falls below a separate minimum rule",
+      "signal": "spec_precision_gap",
+      "scope": "poker-engine",
+      "status": "candidate",
+      "features": [
+        "poker"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "POKER-20 / verification.md achado 4 (poker-engine)"
+      ],
+      "created": "2026-11-04T21:58:20Z",
+      "last_seen": "2026-11-04T21:58:20Z"
+    },
+    {
+      "id": "L-006",
+      "key": "ac_gap::a new command prefix must be checked against ordinary chat text punctuation ellipsis together with fuzzy alias matching with routing tests for those inputs",
+      "text": "A new command prefix must be checked against ordinary chat text (punctuation, ellipsis) together with fuzzy alias matching, with routing tests for those inputs",
+      "signal": "ac_gap",
+      "scope": "command-aliases",
+      "status": "candidate",
+      "features": [
+        "poker"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AD-002 / verification.md achado 8 (command-aliases)"
+      ],
+      "created": "2026-11-04T21:58:20Z",
+      "last_seen": "2026-11-04T21:58:20Z"
     }
   ]
 }

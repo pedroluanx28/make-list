@@ -456,6 +456,18 @@ describe('pokerManager', () => {
       expect(table.players[0].bet).toBe(60);
     });
 
+    it('should let who has not acted yet raise after a short all-in', () => {
+      const table = setupTable([100, 100, 100]);
+      table.players[1].chips = 40;
+      startHand(table, fillerDeal(3));
+      act(table, 0, 'raise', 30); // a raise of 20: the next full raise must add 20 more
+      act(table, 1, 'allin'); // to 40: a raise of only 10
+
+      act(table, 2, 'raise', 60);
+
+      expect(table.hand!.currentBet).toBe(60);
+    });
+
     it('should open the flop with three board cards and the first active player left of the button', () => {
       const table = setupTable([100, 100, 100]);
       const cards = fillerDeal(3);
@@ -547,6 +559,23 @@ describe('pokerManager', () => {
       expect(table.players.map((player) => player.chips)).toEqual([200, 0]);
     });
 
+    it('should reveal the remaining board without a new turn when the only player left to bet calls an all-in', () => {
+      const table = setupTable([100, 200]);
+      const cards = deal([['AS', 'AH'], ['KS', 'KH']], ['2C', '7D', '9H', 'JC', '3S']);
+      startHand(table, cards);
+      act(table, 0, 'allin');
+
+      const events = act(table, 1, 'call');
+
+      expect(events.some((event) => event.type === 'turn')).toBe(false);
+      expect(events.filter((event) => event.type === 'street').map((event: any) => event.street)).toEqual([
+        'flop',
+        'turn',
+        'river',
+      ]);
+      expect(table.players.map((player) => player.chips)).toEqual([200, 100]);
+    });
+
     it('should split side pots so a short all-in only wins the main pot', () => {
       const table = setupTable([100, 100, 100]);
       table.players[1].chips = 30;
@@ -592,6 +621,36 @@ describe('pokerManager', () => {
 
       const showdown = events[events.length - 1] as any;
       expect(showdown.hands.map((hand: any) => hand.handName)).toEqual(['Royal flush', 'Par']);
+    });
+  });
+
+  describe('default raise below the minimum', () => {
+    // p1 opens the flop all-in with only 0.05: the double (0.10) does not reach the minimum raise (0.15)
+    const shortAllInOnTheFlop = () => {
+      const table = setupTable([100, 100, 100]);
+      table.players[1].chips = 15;
+      startHand(table, fillerDeal(3));
+      act(table, 0, 'call');
+      act(table, 1, 'call');
+      act(table, 2, 'check');
+      act(table, 1, 'allin');
+      return table;
+    };
+
+    it('should raise to the minimum when raise has no value', () => {
+      const table = shortAllInOnTheFlop();
+
+      act(table, 2, 'raise');
+
+      expect(table.hand!.currentBet).toBe(15);
+    });
+
+    it('should announce the minimum as the default', () => {
+      const table = shortAllInOnTheFlop();
+
+      expect(getOptions(table)).toContain(
+        'raise [valor] → aumentar a aposta para [valor] (padrão: o mínimo, R$ 0,15)'
+      );
     });
   });
 
@@ -731,6 +790,26 @@ describe('pokerManager', () => {
       expect(potTotal(table)).toBe(25);
     });
 
+    it('should reveal the rest of the board when the exit leaves only one player able to bet', () => {
+      const table = setupTable([100, 200, 200]);
+      const cards = deal([['AS', 'AH'], ['KS', 'KH'], ['2C', '7D']], ['QD', 'JC', '9H', '5C', '3S']);
+      startHand(table, cards);
+      act(table, 0, 'allin');
+      act(table, 1, 'call');
+      act(table, 2, 'call');
+      expect(table.hand!.street).toBe('flop');
+
+      const events = leaveTable(table, jid(2));
+
+      expect(events.filter((event) => event.type === 'street').map((event: any) => event.street)).toEqual(['turn', 'river']);
+      expect(events.some((event) => event.type === 'turn')).toBe(false);
+      expect(events[events.length - 1]).toMatchObject({
+        type: 'showdown',
+        pots: [{ amount: 300, winners: [jid(0)] }],
+      });
+      expect(table.hand).toBeNull();
+    });
+
     it('should keep the turn with the player to act when someone else leaves', () => {
       const table = setupTable([100, 100, 100]);
       startHand(table, fillerDeal(3));
@@ -772,6 +851,25 @@ describe('pokerManager', () => {
       expect(table.players[1].inHand).toBe(false);
       expect(table.dealer).toBe(2);
       expect(playersWithChips(table).map((player) => player.name)).toEqual(['p0', 'p2']);
+    });
+
+    it('should give back to who left the part of the bet nobody still in the hand could cover', () => {
+      const table = setupTable([300, 100, 150]);
+      table.players[1].chips = 60;
+      const cards = deal([['KS', 'KH'], ['2C', '7D'], ['AS', 'AH']], ['AD', 'KD', '9C', '5S', '3H']);
+      startHand(table, cards);
+      act(table, 0, 'raise', 200);
+      act(table, 1, 'allin');
+      leaveTable(table, jid(0));
+
+      const events = act(table, 2, 'call');
+
+      const showdown = events[events.length - 1] as any;
+      expect(showdown.pots).toEqual([
+        { amount: 180, winners: [jid(2)] },
+        { amount: 180, winners: [jid(2)] },
+      ]);
+      expect(table.players.map((player) => player.chips)).toEqual([150, 0, 360]);
     });
 
     it('should list who left in the summary with their result', () => {

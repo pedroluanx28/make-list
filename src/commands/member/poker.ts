@@ -52,7 +52,7 @@ const HELP = [
     "*Na sua vez*",
     `${POKER} check → passar a vez sem apostar (só quando não há aposta para pagar)`,
     `${POKER} call → pagar a aposta atual`,
-    `${POKER} raise [valor] → aumentar a aposta para [valor] (sem valor: o dobro da aposta atual)`,
+    `${POKER} raise [valor] → aumentar a aposta para [valor] (sem valor: o dobro da aposta atual, ou o mínimo se o dobro não chegar a ele)`,
     `${POKER} fold → desistir da mão`,
     `${POKER} allin → apostar todas as suas fichas`,
     "",
@@ -367,7 +367,7 @@ const join = async ({ remoteJid, userJid, sendReply }: CommonFunctions, args: st
 // Chips already in the pot are not lost until the hand ends, so they count in the balance
 const balance = async ({ remoteJid, userJid, sendReply }: CommonFunctions) => {
     const table = requireTable(remoteJid);
-    const player = table.players.find((seated) => seated.jid === userJid);
+    const player = table.players.find((seated) => seated.jid === userJid && !seated.left);
     if (!player) {
         throw new WarningError("Você não está na mesa.");
     }
@@ -436,7 +436,7 @@ const leave = async ({ socket, remoteJid, userJid, sendReply }: CommonFunctions)
 
     if (table.hand) return;
 
-    if (events.some((event) => event.type === "foldWin")) {
+    if (events.some((event) => event.type === "foldWin" || event.type === "showdown")) {
         await afterHand(socket, table);
     } else if (playersWithChips(table).length < MIN_PLAYERS) {
         await finish(socket, table, "Não há jogadores suficientes para continuar.");
