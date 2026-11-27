@@ -8,6 +8,8 @@ Qualquer membro pode abrir uma mesa, entrar e jogar. Iniciar e encerrar a mesa s
 
 O comando aceita os prefixos `.` e `/` (`.poker` e `/poker` funcionam igual).
 
+**Ações na sua vez** (`check`, `call`, `raise`, `fold`, `allin`) são comandos soltos, sem `poker` na frente: `.check`, `.call`, `.raise [valor]`, `.fold`, `.allin` (não `.poker check`). O Baileys (lib do bot) não suporta mais botões interativos do WhatsApp — a WhiskeySockets descontinuou em 2024 por pressão do próprio WhatsApp — então isso é o mais perto de um "toque único" que dá pra fazer hoje. O gerenciamento da mesa (`abrir`, `entrar`, `iniciar`, `sair`, `acabar`, `saldo`) continua em `.poker <subcomando>`.
+
 ## Exemplos
 
 **Abrir uma mesa com mínimo de R$ 0,10 (padrão) e entrar:**
@@ -25,10 +27,10 @@ O comando aceita os prefixos `.` e `/` (`.poker` e `/poker` funcionam igual).
 Small blind: Pedro (R$ 0,05) · Big blind: Ana (R$ 0,10)
 
 @Pedro começa!
-.poker call → pagar R$ 0,05
-.poker raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, R$ 0,20; mínimo R$ 0,20)
-.poker fold → desistir da mão
-.poker allin → apostar todas as suas fichas (R$ 20,00)
+.call → pagar R$ 0,05
+.raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, R$ 0,20; mínimo R$ 0,20)
+.fold → desistir da mão
+.allin → apostar todas as suas fichas (R$ 20,00)
 
 Pote: R$ 0,15
 ```
@@ -64,11 +66,19 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 - **`.poker abrir [mínimo]`**: abre a mesa. O mínimo é o big blind (padrão `0.10`); o small blind é a metade, arredondada para baixo.
 - **`.poker entrar <nome> <buy-in>`**: o nome é uma palavra de até 20 caracteres, único na mesa; o buy-in vai de 10 a 200 vezes o mínimo da mesa (com o mínimo padrão de R$ 0,10: de R$ 1,00 a R$ 20,00; com `.poker abrir 10`: de R$ 100,00 a R$ 2000,00).
 - **`.poker iniciar`**: distribui as cartas e começa a mão (2 a 10 jogadores).
+<<<<<<< Updated upstream
 - **`.poker check`**: passa a vez sem apostar; só quando não há aposta para pagar.
 - **`.poker call`**: paga a aposta atual; se faltar ficha, vira all-in.
 - **`.poker raise [valor]`**: aumenta a sua aposta na rodada **para** `[valor]`. Sem valor, dobra a aposta atual; se o dobro ficar abaixo do raise mínimo (depois de um all-in curto), aumenta para o mínimo. Quando ninguém apostou, abre a aposta (padrão: o mínimo da mesa).
 - **`.poker fold`**: desiste da mão.
 - **`.poker allin`**: aposta todas as suas fichas.
+=======
+- **`.check`**: passa a vez sem apostar; só quando não há aposta para pagar.
+- **`.call`**: paga a aposta atual; se faltar ficha, vira all-in.
+- **`.raise [valor]`**: aumenta a sua aposta na rodada **para** `[valor]`. Sem valor, dobra a aposta atual. Quando ninguém apostou, abre a aposta (padrão: o mínimo da mesa).
+- **`.fold`**: desiste da mão.
+- **`.allin`**: aposta todas as suas fichas.
+>>>>>>> Stashed changes
 - **`.poker saldo`**: responde a quem digitou com as suas fichas, o buy-in e o saldo. Durante uma mão, mostra também quanto você já colocou no pote, que entra no saldo.
 - **`.poker sair`**: sai da mesa sem encerrá-la. Antes de a mesa começar, só libera o lugar. Durante uma mão, é fold: o que você já apostou fica no pote, e o bot mostra o seu resultado (buy-in → fichas, saldo).
 - **`.poker acabar`**: encerra a mesa e envia o resumo.
@@ -78,7 +88,7 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 ## Como Funciona
 
 1. **Lugares**: a ordem de entrada define os lugares. Na 1ª mão, o 1º a entrar é o botão, o 2º o small blind e o 3º o big blind; a cada mão o botão anda um lugar no sentido horário. Com 2 jogadores, o botão é o small blind.
-2. **Cartas**: a cada mão o bot compra um baralho novo e embaralhado na [Deck of Cards API](https://www.deckofcardsapi.com/) e manda as cartas no privado de cada jogador. Se a API falhar, a mão não começa e é só usar `.poker iniciar` de novo.
+2. **Cartas**: a cada mão o bot compra um baralho novo e embaralhado na [Deck of Cards API](https://www.deckofcardsapi.com/) e manda as cartas no privado de cada jogador. Se a API falhar, a mão não começa e é só usar `.poker iniciar` de novo. No grupo, a mensagem da vez já traz os comandos de ação disponíveis (`.check`, `.call`, ...), prontos para copiar.
 3. **Apostas**: os blinds são lançados sozinhos e o pré-flop começa à esquerda do big blind. Depois do flop, começa o primeiro jogador ativo à esquerda do botão. O flop, o turn e o river aparecem no grupo em texto, sempre com todas as cartas da mesa (o turn mostra 4 e o river mostra 5).
 4. **Showdown**: o bot mostra as cartas de quem chegou ao fim, o nome da melhor mão de cada um e quem levou cada pote. Side pots são calculados quando alguém está all-in com menos fichas; empates dividem o pote.
 5. **Tempo limite**: cada jogada tem 30 segundos, contados a partir da mensagem que marca o jogador da vez, e o relógio zera a cada troca de vez. Faltando 10 segundos, o bot marca o jogador. Quando o tempo acaba, o bot usa uma extensão de time bank (+30 s, com novo aviso aos 10 s). Cada jogador tem 3 extensões para a mesa inteira, sem recarga. Sem extensões, é fold automático, mesmo quando o check seria possível. Se o bot reiniciar no meio de uma mão, o jogador da vez ganha 30 segundos novos.
@@ -88,13 +98,14 @@ Ana: buy-in R$ 20,00 → R$ 0,00 (-R$ 20,00)
 
 ## Arquivos
 
-- `src/commands/member/poker.ts` - Subcomandos, mensagens no grupo e cartas no privado
+- `src/commands/member/poker.ts` - Subcomandos de mesa (`.poker ...`), mensagens no grupo e cartas no privado; exporta `runPokerAction`, usado pelo comando de ações
+- `src/commands/member/pokerAction.ts` - Comandos soltos de ação na vez (`.check`, `.call`, `.raise`, `.fold`, `.allin`)
 - `src/utils/pokerManager.ts` - Regras da mesa, side pots, showdown e persistência
 - `src/utils/pokerHand.ts` - Avaliação das mãos e formatação das cartas
 - `src/utils/deckOfCards.ts` - Cliente da Deck of Cards API
 - `src/utils/pokerClock.ts` - Relógio da vez (aviso aos 10 s e fim do tempo)
 - `src/utils/activeSocket.ts` - Conexão atual, usada pelos relógios mesmo depois de uma reconexão
-- `tests/commands/member/poker.test.ts`, `tests/utils/poker*.test.ts`, `tests/utils/deckOfCards.test.ts`, `tests/loader.test.ts` - Testes
+- `tests/commands/member/poker.test.ts`, `tests/commands/member/pokerAction.test.ts`, `tests/utils/poker*.test.ts`, `tests/utils/deckOfCards.test.ts`, `tests/loader.test.ts` - Testes
 
 ## Recursos Técnicos
 

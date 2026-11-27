@@ -6,7 +6,8 @@ const PREFIX = "/";
 const PREFIXES = ["/", "."];
 const BOT_EMOJI = "🤖";
 const BOT_NAME = "SindiBot";
-const BOT_NUMBER = "";
+// Número do operador do bot (só dígitos); único autorizado a gerenciar os grupos autorizados via /grupos
+const BOT_NUMBER = "558592578160";
 
 const COMMANDS_DIR = path.resolve(__dirname, "commands");
 const TEMP_DIR = path.resolve(__dirname, "../", "assets", "temp");

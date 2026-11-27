@@ -132,7 +132,7 @@ const getContent = (webMessage, context) => {
     );
 };
 
-// Fuzzy matches favor the lowest permission level, so a short input doesn't hit an admin-only command
+// Favors the lowest permission level, so an alias shared between folders never resolves to an admin-only command
 const COMMAND_TYPE_PRIORITY = ["member", "admin", "owner"];
 
 // Exact alias first, then alias prefix, then any substring (legacy behavior)

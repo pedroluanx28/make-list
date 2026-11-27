@@ -41,8 +41,14 @@ Este é o índice geral da documentação de todos os comandos disponíveis no b
 ---
 
 ### 🃏 [Poker](./poker.md)
-**Comando:** `poker` (ex.: `.poker abrir`, `.poker entrar`, `.poker iniciar`)  
+**Comando:** `poker` (ex.: `.poker abrir`, `.poker entrar`, `.poker iniciar`); na sua vez, `.check`, `.call`, `.raise`, `.fold`, `.allin`  
 **Descrição:** Conduz uma mesa de Texas Hold'em no grupo: cartas no privado de cada jogador, apostas, side pots e resumo final com o saldo de cada um.
+
+---
+
+### 🔒 [Grupos autorizados](./grupos.md)
+**Comando:** `grupos` (somente o operador do bot)  
+**Descrição:** Lista, autoriza ou remove a autorização de grupos a usar o bot. Comandos mandados em grupo fora da lista são ignorados silenciosamente.
 
 ---
 
@@ -73,9 +79,10 @@ Cada comando possui documentação seguindo esta estrutura padronizada:
 ## Como Usar os Comandos
 
 1. **Prefixo**: Todos os comandos devem ser precedidos por `/` ou `.`. Com `/`, o bot aceita abreviações (ex.: `/p` → `/pedido`); com `.`, só o nome exato do comando com um único ponto (`.poker` funciona; `.p`, `.ok` e `...` não acionam nada)
-2. **Grupos vs Privado**: Alguns comandos funcionam apenas em grupos (como `markall`)
-3. **Parâmetros**: Comandos que aceitam parâmetros têm formatos específicos documentados
-4. **Ajuda**: Alguns comandos oferecem ajuda interna (ex: `--help`)
+2. **Grupos autorizados**: fora do privado, o bot só responde em grupos autorizados (veja [Grupos autorizados](./grupos.md)); em grupos não autorizados, ele simplesmente não responde
+3. **Grupos vs Privado**: Alguns comandos funcionam apenas em grupos (como `markall`)
+4. **Parâmetros**: Comandos que aceitam parâmetros têm formatos específicos documentados
+5. **Ajuda**: Alguns comandos oferecem ajuda interna (ex: `--help`)
 
 ## Testando os Comandos 🧪
 
