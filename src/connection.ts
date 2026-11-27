@@ -38,7 +38,8 @@ export const connect = async (onSocket: (socket) => void = () => {}) => {
             if (jid.includes('@g.us') && jid.includes('announce')) return true;
             return false;
         },
-        syncFullHistory: false
+        syncFullHistory: false,
+        shouldSyncHistoryMessage: () => false
     });
 
     if (!socket.authState.creds.registered) {
