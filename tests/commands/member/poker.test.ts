@@ -7,7 +7,14 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
 }));
 
+// Converting a real card image to webp needs sharp and the network; stub it with a deterministic buffer
+jest.mock('../../../src/utils/deckOfCards', () => ({
+  ...jest.requireActual('../../../src/utils/deckOfCards'),
+  cardStickerBuffer: jest.fn(async (code: string) => Buffer.from(`sticker:${code}`)),
+}));
+
 import { poker, resumePokerClocks } from '../../../src/commands/member/poker';
+import { pokerAction } from '../../../src/commands/member/pokerAction';
 import { setActiveSocket } from '../../../src/utils/activeSocket';
 import { stopClock } from '../../../src/utils/pokerClock';
 import { DangerError, InvalidParameterError, WarningError } from '../../../src/errors';
@@ -30,7 +37,27 @@ const mockFetch = jest.fn(async (url: string) => {
 
 let socket: { sendMessage: jest.Mock; groupMetadata: jest.Mock };
 
+const ACTIONS = ['check', 'call', 'raise', 'fold', 'allin'];
+
+// Routes to the bare action command (.call, .raise, ...) when the input is an action, otherwise to .poker
 const run = async (fullArgs: string, seat = 0, overrides: Partial<CommonFunctions> = {}) => {
+  const [first, ...rest] = (fullArgs ?? '').trim().split(/\s+/).filter(Boolean);
+  const action = first?.toLowerCase();
+
+  if (action && ACTIONS.includes(action)) {
+    const mock = createMockCommonFunctions({
+      socket,
+      remoteJid: GROUP,
+      userJid: jid(seat),
+      commandName: action,
+      args: rest,
+      fullArgs: rest.join(' '),
+      ...overrides,
+    });
+    await pokerAction.handle(mock);
+    return mock;
+  }
+
   const mock = createMockCommonFunctions({ socket, remoteJid: GROUP, userJid: jid(seat), fullArgs, ...overrides });
   await poker.handle(mock);
   return mock;
@@ -84,11 +111,11 @@ describe('poker command', () => {
       const reply = (mock.sendReply as jest.Mock).mock.calls[0][0];
       expect(reply).toContain('🃏 *Poker (Texas Hold\'em)*');
       expect(reply).toContain('.poker abrir [mínimo]');
-      expect(reply).toContain('.poker check → passar a vez sem apostar');
+      expect(reply).toContain('.check → passar a vez sem apostar');
       expect(reply).toContain('.poker saldo → mostra as suas fichas e o seu saldo na mesa');
       expect(reply).toContain('Cada jogada tem 30 segundos');
       expect(reply).toContain('.poker sair → sai da mesa sem encerrá-la (se estiver numa mão, é fold)');
-      expect(reply).toContain('.poker allin → apostar todas as suas fichas');
+      expect(reply).toContain('.allin → apostar todas as suas fichas');
     });
 
     it('should show the help when the message has no arguments at all', async () => {
@@ -218,9 +245,9 @@ describe('poker command', () => {
 
       const calls = socket.sendMessage.mock.calls;
       expect(calls[0]).toEqual([GROUP, { text: '🤖 🃏 Distribuindo cartas...', mentions: [] }]);
-      // Two card images then the text, for each player in seat order
-      expect(calls[1]).toEqual([jid(0), { image: { url: 'https://deckofcardsapi.com/static/img/2C.png' } }]);
-      expect(calls[2]).toEqual([jid(0), { image: { url: 'https://deckofcardsapi.com/static/img/3D.png' } }]);
+      // Two card stickers then the text, for each player in seat order
+      expect(calls[1]).toEqual([jid(0), { sticker: Buffer.from('sticker:2C') }]);
+      expect(calls[2]).toEqual([jid(0), { sticker: Buffer.from('sticker:3D') }]);
       expect(calls[3]).toEqual([jid(0), { text: '🤖 🃏 Suas cartas na mão 1: [2♣️] [3♦️]' }]);
       expect(calls[6]).toEqual([jid(1), { text: '🤖 🃏 Suas cartas na mão 1: [4♥️] [6♠️]' }]);
       expect(calls[9]).toEqual([jid(2), { text: '🤖 🃏 Suas cartas na mão 1: [8♣️] [9♦️]' }]);
@@ -232,10 +259,10 @@ describe('poker command', () => {
             'Small blind: p1 (R$ 0,05) · Big blind: p2 (R$ 0,10)',
             '',
             `${tag(0)} começa!`,
-            '.poker call → pagar R$ 0,10',
-            '.poker raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, R$ 0,20; mínimo R$ 0,20)',
-            '.poker fold → desistir da mão',
-            '.poker allin → apostar todas as suas fichas (R$ 1,00)',
+            '.call → pagar R$ 0,10',
+            '.raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, R$ 0,20; mínimo R$ 0,20)',
+            '.fold → desistir da mão',
+            '.allin → apostar todas as suas fichas (R$ 1,00)',
             '',
             '⏱️ 30s para jogar · time bank: 3 × 30s',
             'Pote: R$ 0,15',
@@ -301,10 +328,10 @@ describe('poker command', () => {
           '🤖 📞 p0 deu call (R$ 0,10 na rodada).',
           '',
           `${tag(1)}, é sua vez!`,
-          '.poker call → pagar R$ 0,05',
-          '.poker raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, R$ 0,20; mínimo R$ 0,20)',
-          '.poker fold → desistir da mão',
-          '.poker allin → apostar todas as suas fichas (R$ 1,00)',
+          '.call → pagar R$ 0,05',
+          '.raise [valor] → aumentar a aposta para [valor] (padrão: o dobro, R$ 0,20; mínimo R$ 0,20)',
+          '.fold → desistir da mão',
+          '.allin → apostar todas as suas fichas (R$ 1,00)',
           '',
           '⏱️ 30s para jogar · time bank: 3 × 30s',
           'Pote: R$ 0,25',
@@ -339,7 +366,7 @@ describe('poker command', () => {
       await run('check', 2);
 
       expect(lastGroupMessage().text).toContain('✔️ p2 deu check.\n\n🃏 *Flop:* [JH] [2♠️] [3♣️]'.replace('[JH]', '[J♥️]'));
-      expect(lastGroupMessage().text).toContain(`${tag(1)}, é sua vez!\n.poker check → passar a vez sem apostar`);
+      expect(lastGroupMessage().text).toContain(`${tag(1)}, é sua vez!\n.check → passar a vez sem apostar`);
     });
 
     it('should give the pot on folds, show the chips and deal the next hand', async () => {

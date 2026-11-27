@@ -2,7 +2,7 @@ import { BOT_EMOJI } from "../../config";
 import { getActiveSocket } from "../../utils/activeSocket";
 import { DangerError, InvalidParameterError, WarningError } from "../../errors";
 import { isGroupAdmin } from "../../middlewares/checkPermission";
-import { cardImageUrl, drawCards } from "../../utils/deckOfCards";
+import { cardStickerBuffer, drawCards } from "../../utils/deckOfCards";
 import { formatPrice } from "../../utils/menuManager";
 import { TURN_TIME_MS, startClock, stopClock } from "../../utils/pokerClock";
 import { formatCards } from "../../utils/pokerHand";
@@ -37,6 +37,10 @@ import {
 
 const POKER = ".poker";
 
+// Actions are bare top-level commands (.check, .call, ...) handled by src/commands/member/pokerAction.ts,
+// not subcommands of .poker; ACTION_PREFIX is only used to render them in help/announcement text.
+const ACTION_PREFIX = ".";
+
 const HELP = [
     "🃏 *Poker (Texas Hold'em)*",
     "",
@@ -50,11 +54,11 @@ const HELP = [
     `${POKER} ajuda → mostra esta ajuda`,
     "",
     "*Na sua vez*",
-    `${POKER} check → passar a vez sem apostar (só quando não há aposta para pagar)`,
-    `${POKER} call → pagar a aposta atual`,
-    `${POKER} raise [valor] → aumentar a aposta para [valor] (sem valor: o dobro da aposta atual, ou o mínimo se o dobro não chegar a ele)`,
-    `${POKER} fold → desistir da mão`,
-    `${POKER} allin → apostar todas as suas fichas`,
+    `${ACTION_PREFIX}check → passar a vez sem apostar (só quando não há aposta para pagar)`,
+    `${ACTION_PREFIX}call → pagar a aposta atual`,
+    `${ACTION_PREFIX}raise [valor] → aumentar a aposta para [valor] (sem valor: o dobro da aposta atual, ou o mínimo se o dobro não chegar a ele)`,
+    `${ACTION_PREFIX}fold → desistir da mão`,
+    `${ACTION_PREFIX}allin → apostar todas as suas fichas`,
     "",
     "*Regras*",
     "• A ordem de entrada define os lugares: na 1ª mão o 1º a entrar é o botão, o 2º o small blind e o 3º o big blind; depois gira no sentido horário.",
@@ -63,8 +67,6 @@ const HELP = [
     "• Valores em reais: 0.10, 0,10 ou 50.",
     `• A mesa acaba quando só um jogador tiver fichas ou com ${POKER} acabar.`,
 ].join("\n");
-
-const ACTIONS: PokerAction[] = ["check", "call", "raise", "fold", "allin"];
 
 const STREET_NAMES = { flop: "Flop", turn: "Turn", river: "River" };
 
@@ -94,13 +96,13 @@ const requireManager = async (socket: any, table: PokerTable, userJid: string, a
     }
 };
 
-// Card images first, then the text; a failed image falls back to the text alone
+// Card stickers first, then the text; a failed sticker falls back to the text alone
 const sendCards = async (socket: any, table: PokerTable, jid: string, cards: string[]) => {
     for (const code of cards) {
         try {
-            await socket.sendMessage(jid, { image: { url: cardImageUrl(code) } });
+            await socket.sendMessage(jid, { sticker: await cardStickerBuffer(code) });
         } catch (error) {
-            console.error("Erro ao enviar imagem da carta:", error);
+            console.error("Erro ao enviar figurinha da carta:", error);
         }
     }
 
@@ -166,7 +168,7 @@ const describeEvents = (table: PokerTable, events: PokerEvent[]) => {
                 lines.push(
                     "",
                     first ? `${tag(event.jid)} começa!` : `${tag(event.jid)}, é sua vez!`,
-                    ...getOptions(table).map((option) => `${POKER} ${option}`),
+                    ...getOptions(table).map((option) => `${ACTION_PREFIX}${option}`),
                     "",
                     `⏱️ ${TURN_TIME_MS / 1000}s para jogar · time bank: ${timeBankLeft(currentPlayer(table)!)} × ${TURN_TIME_MS / 1000}s`,
                     `Pote: ${formatPrice(potTotal(table))}`
@@ -485,14 +487,22 @@ export const poker: Command = {
             if (action === "acabar") return end(params);
             if (action === "saldo") return balance(params);
             if (action === "sair") return leave(params);
-            if (ACTIONS.includes(action as PokerAction)) return play(params, action as PokerAction, args);
 
             throw new WarningError(`Subcomando "${subcommand}" não existe. Use ${POKER} ajuda.`);
         });
     },
 };
 
+// Entry point for the bare action commands (.check, .call, .raise, .fold, .allin — see pokerAction.ts)
 // Must stay declared after `poker`: the command loader takes the first export of each command file
+export const runPokerAction = async (params: CommonFunctions, action: PokerAction, args: string[]) => {
+    if (!params.isGroup) {
+        throw new WarningError("O poker só funciona em grupos.");
+    }
+
+    await withTableLock(params.remoteJid, () => play(params, action, args));
+};
+
 // After a restart the player to act gets a full turn again
 export const resumePokerClocks = () => {
     getAllTables()

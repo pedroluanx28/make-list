@@ -27,11 +27,13 @@ Bot para WhatsApp desenvolvido em TypeScript que oferece comandos úteis para or
 | `/pedido-encerrar` | `pedido-encerrar`, `lidineide-encerrar` | membro | Encerra o pedido ativo e envia o resumo |
 | `/cardapio` | `cardapio`, `produtos` | admin | Lista e edita os itens do cardápio do pedido |
 | `.poker` | `poker` | membro | Mesa de Texas Hold'em com cartas no privado (`.poker ajuda`) |
+| `.check` / `.call` / `.raise` / `.fold` / `.allin` | idem | membro | Jogada na sua vez numa mesa de poker aberta no grupo |
+| `/grupos` | `grupos` | membro (só o operador do bot) | Lista/autoriza/desautoriza grupos a usar o bot |
 | `/lembrete` | `lembrete`, `reminder`, `lembrar` | membro | Cria um lembrete (`30min`, `2h`, `1d`, `1w`) |
 | `/lembretes` | `lembretes`, `reminders`, `listarlembretes` | membro | Lista seus lembretes ativos |
 | `/deletarlembrete` | `deletarlembrete`, `deletereminder`, `removerlembrete` | membro | Remove um lembrete pelo ID |
 
-Os comandos aceitam os prefixos `/` e `.`; com `.`, só o nome exato do comando funciona (abreviações só com `/`). Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
+Os comandos aceitam os prefixos `/` e `.`; com `.`, só o nome exato do comando funciona (abreviações só com `/`). Fora do privado, o bot só responde em grupos autorizados — veja [`/grupos`](./docs/grupos.md). Detalhes de cada comando em [`docs/README.md`](./docs/README.md).
 
 ## Instalação e Execução
 

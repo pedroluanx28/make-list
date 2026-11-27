@@ -3,12 +3,18 @@ jest.mock('../../src/utils', () => ({
   findCommandImport: jest.fn(),
 }));
 
+jest.mock('../../src/utils/authorizedGroups', () => ({
+  isGroupAuthorized: jest.fn(),
+}));
+
 import { dynamicCommand } from '../../src/utils/dynamicCommand';
 import { findCommandImport } from '../../src/utils';
+import { isGroupAuthorized } from '../../src/utils/authorizedGroups';
 import { DangerError, InvalidParameterError, WarningError } from '../../src/errors';
 import { createMockCommonFunctions } from '../mocks/commonFunctions';
 
 const mockFindCommandImport = findCommandImport as jest.MockedFunction<typeof findCommandImport>;
+const mockIsGroupAuthorized = isGroupAuthorized as jest.MockedFunction<typeof isGroupAuthorized>;
 
 const USER = 'user@s.whatsapp.net';
 const GROUP = 'test@g.us';
@@ -29,6 +35,8 @@ const createSocket = (participants: Participant[] = [], owner?: string) => ({
 describe('dynamicCommand', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Most tests here exercise permission/error handling, not the group allowlist, so default to authorized
+    mockIsGroupAuthorized.mockReturnValue(true);
   });
 
   describe('command resolution', () => {
@@ -94,6 +102,57 @@ describe('dynamicCommand', () => {
       expect(socket.groupMetadata).not.toHaveBeenCalled();
       expect(params.sendErrorReply).not.toHaveBeenCalled();
       expect(params.sendWarningReply).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('authorized groups gate', () => {
+    const OPERATOR = '558592578160@s.whatsapp.net';
+
+    it('should ignore a command sent in an unauthorized group', async () => {
+      const command = createCommand();
+      mockFindCommandImport.mockReturnValue({ type: 'member', command });
+      mockIsGroupAuthorized.mockReturnValue(false);
+      const params = createMockCommonFunctions({ remoteJid: GROUP });
+
+      const result = await dynamicCommand(params);
+
+      expect(result).toBeUndefined();
+      expect(command.handle).not.toHaveBeenCalled();
+      expect(mockIsGroupAuthorized).toHaveBeenCalledWith(GROUP);
+    });
+
+    it('should run a command sent in an authorized group', async () => {
+      const command = createCommand();
+      mockFindCommandImport.mockReturnValue({ type: 'member', command });
+      mockIsGroupAuthorized.mockReturnValue(true);
+      const params = createMockCommonFunctions({ remoteJid: GROUP });
+
+      await dynamicCommand(params);
+
+      expect(command.handle).toHaveBeenCalledTimes(1);
+    });
+
+    it('should let the bot operator run a command in an unauthorized group', async () => {
+      const command = createCommand();
+      mockFindCommandImport.mockReturnValue({ type: 'member', command });
+      mockIsGroupAuthorized.mockReturnValue(false);
+      const params = createMockCommonFunctions({ remoteJid: GROUP, userJid: OPERATOR });
+
+      await dynamicCommand(params);
+
+      expect(command.handle).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not gate a private chat even when "authorized" would be false', async () => {
+      const command = createCommand();
+      mockFindCommandImport.mockReturnValue({ type: 'member', command });
+      mockIsGroupAuthorized.mockReturnValue(false);
+      const params = createMockCommonFunctions({ isGroup: false, remoteJid: 'user@s.whatsapp.net' });
+
+      await dynamicCommand(params);
+
+      expect(mockIsGroupAuthorized).not.toHaveBeenCalled();
+      expect(command.handle).toHaveBeenCalledTimes(1);
     });
   });
 
